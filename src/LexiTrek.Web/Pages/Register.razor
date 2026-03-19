@@ -1,0 +1,79 @@
+@page "/register"
+@layout LexiTrek.Web.Layout.MainLayout
+@inject AuthApiService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Registrace - LexiTrek</PageTitle>
+
+<div class="auth-container">
+    <MudContainer MaxWidth="MaxWidth.ExtraSmall">
+        <div class="text-center mb-6">
+            <MudText Typo="Typo.h3" Class="auth-logo mb-2">LexiTrek</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">Vytvořte si účet zdarma</MudText>
+        </div>
+
+        <MudCard Class="auth-card pa-2" Elevation="0">
+            <MudCardContent>
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <MudAlert Severity="Severity.Error" Class="mb-4" Variant="Variant.Filled" Dense="true">@_error</MudAlert>
+                }
+
+                <MudTextField @bind-Value="_displayName" Label="Jméno" Variant="Variant.Outlined" Class="mb-4" Required="true"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Badge" />
+                <MudTextField @bind-Value="_userName" Label="Uživatelské jméno" Variant="Variant.Outlined" Class="mb-4" Required="true"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Person" />
+                <MudTextField @bind-Value="_email" Label="Email" InputType="InputType.Email"
+                              Variant="Variant.Outlined" Class="mb-4" Required="true"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Email" />
+                <MudTextField @bind-Value="_password" Label="Heslo" InputType="InputType.Password"
+                              Variant="Variant.Outlined" Class="mb-2" Required="true"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Lock"
+                              HelperText="Minimálně 6 znaků, velké a malé písmeno, číslice" />
+            </MudCardContent>
+            <MudCardActions Class="flex-column pa-4 pt-0">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleRegister"
+                           Disabled="_loading" FullWidth="true" Size="Size.Large"
+                           Style="font-weight: 600; text-transform: none;">
+                    @if (_loading)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    }
+                    Vytvořit účet
+                </MudButton>
+                <MudText Align="Align.Center" Class="mt-4" Typo="Typo.body2">
+                    Už máte účet? <MudLink Href="/login" Typo="Typo.body2" Style="font-weight: 600;">Přihlaste se</MudLink>
+                </MudText>
+            </MudCardActions>
+        </MudCard>
+    </MudContainer>
+</div>
+
+@code {
+    private string _displayName = "";
+    private string _userName = "";
+    private string _email = "";
+    private string _password = "";
+    private string? _error;
+    private bool _loading;
+
+    private async Task HandleRegister()
+    {
+        _error = null;
+        _loading = true;
+
+        var success = await AuthService.RegisterAsync(
+            new RegisterDto(_email, _userName, _password, _displayName));
+
+        if (success)
+        {
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            _error = "Registrace selhala. Zkuste jiný email nebo uživatelské jméno.";
+        }
+
+        _loading = false;
+    }
+}

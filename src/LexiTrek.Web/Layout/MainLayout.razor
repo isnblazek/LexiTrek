@@ -1,0 +1,60 @@
+@inherits LayoutComponentBase
+@inject AuthApiService AuthService
+@inject NavigationManager Navigation
+
+<AuthorizeView>
+    <Authorized>
+        <MudLayout>
+            <MudAppBar Elevation="0" Style="background: #4F46E5; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                               OnClick="@ToggleDrawer" />
+                <MudText Typo="Typo.h6" Class="ml-3" Style="font-weight: 800; letter-spacing: -0.5px;">LexiTrek</MudText>
+                <MudSpacer />
+                <MudMenu Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight">
+                    <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="LogoutAsync">Odhlásit se</MudMenuItem>
+                </MudMenu>
+            </MudAppBar>
+
+            <MudDrawer @bind-Open="_drawerOpen" Elevation="0" ClipMode="DrawerClipMode.Always"
+                       Style="border-right: 1px solid #E2E8F0;">
+                <MudNavMenu Class="pt-2">
+                    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
+                        Dashboard
+                    </MudNavLink>
+                    <MudNavLink Href="/groups" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Folder">
+                        Moje skupiny
+                    </MudNavLink>
+                    <MudNavLink Href="/groups/public" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Public">
+                        Veřejné skupiny
+                    </MudNavLink>
+                    <MudNavLink Href="/tags" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Label">
+                        Tagy
+                    </MudNavLink>
+                    <MudDivider Class="my-2" />
+                    <MudNavLink Href="/training/setup" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.FitnessCenter">
+                        Trénink
+                    </MudNavLink>
+                </MudNavMenu>
+            </MudDrawer>
+
+            <MudMainContent Class="pa-6" Style="background: #F8FAFC; min-height: 100vh;">
+                @Body
+            </MudMainContent>
+        </MudLayout>
+    </Authorized>
+    <NotAuthorized>
+        @Body
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private bool _drawerOpen = true;
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private async Task LogoutAsync()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/");
+    }
+}

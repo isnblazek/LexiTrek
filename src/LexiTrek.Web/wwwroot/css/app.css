@@ -1,0 +1,249 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+html, body {
+    font-family: 'Inter', 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #F8FAFC;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1:focus {
+    outline: none;
+}
+
+/* ── Cards ────────────────────────────────────────── */
+.mud-card {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* ── Landing page ─────────────────────────────────── */
+.landing-hero {
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #A855F7 100%);
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+.landing-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 600px;
+    height: 600px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+}
+
+.landing-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    left: -10%;
+    width: 400px;
+    height: 400px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 50%;
+}
+
+.landing-content {
+    position: relative;
+    z-index: 1;
+}
+
+.feature-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 16px;
+}
+
+.feature-card {
+    background: rgba(255,255,255,0.08) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+    background: rgba(255,255,255,0.14) !important;
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+/* ── Auth pages ───────────────────────────────────── */
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%);
+}
+
+.auth-card {
+    border: none !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08) !important;
+}
+
+.auth-logo {
+    font-weight: 800;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ── Dashboard stat cards ─────────────────────────── */
+.stat-card {
+    border: none !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+    transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+.stat-card-primary {
+    border-left: 4px solid #4F46E5 !important;
+}
+
+.stat-card-secondary {
+    border-left: 4px solid #10B981 !important;
+}
+
+.stat-card-tertiary {
+    border-left: 4px solid #F59E0B !important;
+}
+
+/* ── Group cards ──────────────────────────────────── */
+.group-card {
+    border: 1px solid #E2E8F0 !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease;
+}
+
+.group-card:hover {
+    border-color: #818CF8 !important;
+    box-shadow: 0 4px 12px rgba(79,70,229,0.1) !important;
+    transform: translateY(-2px);
+}
+
+/* ── Training flashcard ───────────────────────────── */
+.flashcard {
+    perspective: 1000px;
+    min-height: 320px;
+}
+
+.flashcard-inner {
+    min-height: 320px;
+    background: linear-gradient(135deg, #FFFFFF, #F8FAFC);
+    border: 2px solid #E2E8F0;
+    border-radius: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.flashcard-inner:hover {
+    border-color: #818CF8;
+}
+
+.flashcard-flipped {
+    border-color: #4F46E5 !important;
+    background: linear-gradient(135deg, #EEF2FF, #F5F3FF) !important;
+}
+
+/* ── Nav ──────────────────────────────────────────── */
+.mud-nav-link.active {
+    background-color: #EEF2FF !important;
+    color: #4F46E5 !important;
+    font-weight: 600;
+}
+
+/* ── Blazor defaults ──────────────────────────────── */
+#blazor-error-ui {
+    color-scheme: light only;
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+.blazor-error-boundary {
+    background: #EF4444;
+    padding: 1rem;
+    color: white;
+    border-radius: 8px;
+}
+
+.blazor-error-boundary::after {
+    content: "Nastala chyba."
+}
+
+.loading-progress {
+    position: absolute;
+    display: block;
+    width: 8rem;
+    height: 8rem;
+    inset: 20vh 0 auto 0;
+    margin: 0 auto 0 auto;
+}
+
+.loading-progress circle {
+    fill: none;
+    stroke: #E2E8F0;
+    stroke-width: 0.6rem;
+    transform-origin: 50% 50%;
+    transform: rotate(-90deg);
+}
+
+.loading-progress circle:last-child {
+    stroke: #4F46E5;
+    stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
+    transition: stroke-dasharray 0.05s ease-in-out;
+}
+
+.loading-progress-text {
+    position: absolute;
+    text-align: center;
+    font-weight: bold;
+    inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
+    color: #4F46E5;
+}
+
+.loading-progress-text:after {
+    content: var(--blazor-load-percentage-text, "Loading");
+}

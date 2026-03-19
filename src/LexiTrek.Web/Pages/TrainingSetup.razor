@@ -1,0 +1,114 @@
+@page "/training/setup"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject GroupApiService GroupService
+@inject TagApiService TagService
+@inject TrainingApiService TrainingService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Trénink - LexiTrek</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Nastavení tréninku</MudText>
+
+<MudContainer MaxWidth="MaxWidth.Small">
+    <MudCard>
+        <MudCardContent>
+            <MudRadioGroup @bind-Value="_mode">
+                <MudRadio Value="0" Color="Color.Primary">Podle skupiny</MudRadio>
+                <MudRadio Value="1" Color="Color.Primary">Podle tagu</MudRadio>
+            </MudRadioGroup>
+
+            @if (_mode == 0)
+            {
+                <MudSelect @bind-Value="_selectedGroupId" Label="Vyberte skupinu" Variant="Variant.Outlined" Class="mt-4">
+                    @foreach (var group in _groups)
+                    {
+                        <MudSelectItem Value="group.Id">@group.Name (@group.WordCount slovíček)</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+            else
+            {
+                <MudSelect @bind-Value="_selectedTagId" Label="Vyberte tag" Variant="Variant.Outlined" Class="mt-4">
+                    @foreach (var tag in _tags)
+                    {
+                        <MudSelectItem Value="tag.Id">@tag.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+
+            <MudNumericField @bind-Value="_count" Label="Počet slovíček" Variant="Variant.Outlined" Class="mt-4"
+                             Min="5" Max="50" />
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartTrainingAsync"
+                       Disabled="_loading" FullWidth="true">
+                Začít trénink
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private int _mode;
+    private Guid _selectedGroupId;
+    private Guid _selectedTagId;
+    private int _count = 20;
+    private bool _loading;
+    private List<GroupListDto> _groups = [];
+    private List<TagDto> _tags = [];
+
+    [SupplyParameterFromQuery(Name = "groupId")]
+    public string? PreselectedGroupId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _groups = await GroupService.GetUserGroupsAsync();
+        _tags = await TagService.GetTagsAsync();
+
+        if (Guid.TryParse(PreselectedGroupId, out var gid))
+        {
+            _selectedGroupId = gid;
+            _mode = 0;
+        }
+        else if (_groups.Any())
+        {
+            _selectedGroupId = _groups[0].Id;
+        }
+
+        if (_tags.Any())
+        {
+            _selectedTagId = _tags[0].Id;
+        }
+    }
+
+    private async Task StartTrainingAsync()
+    {
+        _loading = true;
+
+        Guid? groupId = _mode == 0 ? _selectedGroupId : null;
+        Guid? tagId = _mode == 1 ? _selectedTagId : null;
+
+        var words = await TrainingService.GetTrainingWordsAsync(groupId, tagId, _count);
+        if (!words.Any())
+        {
+            Snackbar.Add("Žádná slovíčka k tréninku.", Severity.Warning);
+            _loading = false;
+            return;
+        }
+
+        var session = await TrainingService.StartSessionAsync(
+            new StartSessionDto(_mode, groupId, tagId));
+
+        if (session != null)
+        {
+            Navigation.NavigateTo($"/training/{session.Id}?groupId={groupId}&tagId={tagId}&count={_count}");
+        }
+        else
+        {
+            Snackbar.Add("Chyba při zahájení tréninku.", Severity.Error);
+        }
+
+        _loading = false;
+    }
+}

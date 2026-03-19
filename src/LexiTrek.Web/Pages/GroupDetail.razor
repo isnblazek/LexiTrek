@@ -1,0 +1,146 @@
+@page "/groups/{Id:guid}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject GroupApiService GroupService
+@inject WordApiService WordService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>@(_group?.Name ?? "Skupina") - LexiTrek</PageTitle>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else if (_group == null)
+{
+    <MudAlert Severity="Severity.Error">Skupina nenalezena.</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12">
+            <MudText Typo="Typo.h4">@_group.Name</MudText>
+            @if (!string.IsNullOrEmpty(_group.Description))
+            {
+                <MudText Typo="Typo.body1" Class="mb-2">@_group.Description</MudText>
+            }
+            <MudChip T="string" Size="Size.Small"
+                     Color="@(_group.Visibility == 1 ? Color.Success : Color.Default)">
+                @(_group.Visibility == 1 ? "Veřejná" : "Soukromá")
+            </MudChip>
+            <MudText Typo="Typo.caption" Class="ml-2">Autor: @_group.OwnerDisplayName</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       OnClick="@(() => _showAddWord = true)" StartIcon="@Icons.Material.Filled.Add" Class="mr-2">
+                Přidat slovíčko
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       Href="@($"/training/setup?groupId={Id}")">
+                Trénink této skupiny
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+
+    @if (_showAddWord)
+    {
+        <MudCard Class="mt-4 mb-4">
+            <MudCardContent>
+                <MudText Typo="Typo.h6" Class="mb-2">Nové slovíčko</MudText>
+                <MudGrid>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField @bind-Value="_newCzech" Label="Česky" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField @bind-Value="_newEnglish" Label="Anglicky" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField @bind-Value="_newNotes" Label="Poznámky" Variant="Variant.Outlined" />
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="AddWordAsync">Přidat</MudButton>
+                <MudButton OnClick="@(() => _showAddWord = false)">Zrušit</MudButton>
+            </MudCardActions>
+        </MudCard>
+    }
+
+    <MudTable Items="_words" Hover="true" Striped="true" Class="mt-4" Loading="_wordsLoading">
+        <HeaderContent>
+            <MudTh>Česky</MudTh>
+            <MudTh>Anglicky</MudTh>
+            <MudTh>Poznámky</MudTh>
+            <MudTh>Akce</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Czech</MudTd>
+            <MudTd>@context.English</MudTd>
+            <MudTd>@context.Notes</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                               OnClick="@(() => DeleteWordAsync(context.Id))" Color="Color.Error" />
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>Žádná slovíčka. Přidejte první!</MudText>
+        </NoRecordsContent>
+    </MudTable>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private GroupDto? _group;
+    private List<WordDto> _words = [];
+    private bool _loading = true;
+    private bool _wordsLoading;
+    private bool _showAddWord;
+    private string _newCzech = "";
+    private string _newEnglish = "";
+    private string? _newNotes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _group = await GroupService.GetGroupAsync(Id);
+        if (_group != null)
+        {
+            _words = await WordService.GetWordsAsync(Id);
+        }
+        _loading = false;
+    }
+
+    private async Task AddWordAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newCzech) || string.IsNullOrWhiteSpace(_newEnglish)) return;
+
+        var word = await WordService.CreateWordAsync(Id, new CreateWordDto(_newCzech, _newEnglish, _newNotes));
+        if (word != null)
+        {
+            _words.Add(word);
+            _newCzech = "";
+            _newEnglish = "";
+            _newNotes = null;
+            _showAddWord = false;
+            Snackbar.Add("Slovíčko přidáno!", Severity.Success);
+        }
+    }
+
+    private async Task DeleteWordAsync(Guid wordId)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Smazat slovíčko", "Opravdu chcete smazat toto slovíčko?",
+            yesText: "Smazat", cancelText: "Zrušit");
+
+        if (result == true)
+        {
+            if (await WordService.DeleteWordAsync(wordId))
+            {
+                _words.RemoveAll(w => w.Id == wordId);
+                Snackbar.Add("Slovíčko smazáno.", Severity.Success);
+            }
+        }
+    }
+}

@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LexiTrek.Api/LexiTrek.Api.csproj" />
+    <Project Path="src/LexiTrek.Application/LexiTrek.Application.csproj" />
+    <Project Path="src/LexiTrek.Domain/LexiTrek.Domain.csproj" />
+    <Project Path="src/LexiTrek.Infrastructure/LexiTrek.Infrastructure.csproj" />
+    <Project Path="src/LexiTrek.Shared/LexiTrek.Shared.csproj" />
+    <Project Path="src/LexiTrek.Web/LexiTrek.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LexiTrek.Tests/LexiTrek.Tests.csproj" />
+  </Folder>
+</Solution>

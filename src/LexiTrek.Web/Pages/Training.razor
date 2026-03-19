@@ -1,0 +1,121 @@
+@page "/training/{SessionId:guid}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject TrainingApiService TrainingService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Trénink - LexiTrek</PageTitle>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else if (!_words.Any())
+{
+    <MudAlert Severity="Severity.Info">Žádná slovíčka k tréninku.</MudAlert>
+}
+else if (_currentIndex < _words.Count)
+{
+    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
+        <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mb-2">
+            @(_currentIndex + 1) / @_words.Count
+        </MudText>
+        <MudProgressLinear Value="@((double)(_currentIndex) / _words.Count * 100)" Color="Color.Primary" Class="mb-4" />
+
+        <MudCard Class="pa-8 text-center" Style="min-height: 300px; cursor: pointer;" @onclick="FlipCard">
+            <MudCardContent Class="d-flex flex-column justify-center align-center" Style="min-height: 250px;">
+                @if (!_flipped)
+                {
+                    <MudText Typo="Typo.h3">@_words[_currentIndex].Czech</MudText>
+                    <MudText Typo="Typo.caption" Class="mt-2">Klikněte pro zobrazení odpovědi</MudText>
+                }
+                else
+                {
+                    <MudText Typo="Typo.h3" Color="Color.Primary">@_words[_currentIndex].English</MudText>
+                    @if (!string.IsNullOrEmpty(_words[_currentIndex].Notes))
+                    {
+                        <MudText Typo="Typo.body2" Class="mt-2">@_words[_currentIndex].Notes</MudText>
+                    }
+                    <MudText Typo="Typo.caption" Class="mt-2">Skupina: @_words[_currentIndex].GroupName</MudText>
+                }
+            </MudCardContent>
+        </MudCard>
+
+        @if (_flipped)
+        {
+            <MudGrid Class="mt-4" Justify="Justify.Center">
+                <MudItem>
+                    <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Large"
+                               OnClick="@(() => Answer(0))">
+                        Nevím
+                    </MudButton>
+                </MudItem>
+                <MudItem>
+                    <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large"
+                               OnClick="@(() => Answer(1))">
+                        Částečně
+                    </MudButton>
+                </MudItem>
+                <MudItem>
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Large"
+                               OnClick="@(() => Answer(2))">
+                        Vím
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        }
+    </MudContainer>
+}
+
+@code {
+    [Parameter] public Guid SessionId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "groupId")]
+    public string? GroupIdStr { get; set; }
+
+    [SupplyParameterFromQuery(Name = "tagId")]
+    public string? TagIdStr { get; set; }
+
+    [SupplyParameterFromQuery(Name = "count")]
+    public int Count { get; set; } = 20;
+
+    private List<TrainingWordDto> _words = [];
+    private List<TrainingResultDto> _results = [];
+    private int _currentIndex;
+    private bool _flipped;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Guid? groupId = Guid.TryParse(GroupIdStr, out var gid) ? gid : null;
+        Guid? tagId = Guid.TryParse(TagIdStr, out var tid) ? tid : null;
+
+        _words = await TrainingService.GetTrainingWordsAsync(groupId, tagId, Count);
+        _loading = false;
+    }
+
+    private void FlipCard() => _flipped = true;
+
+    private async Task Answer(int result)
+    {
+        _results.Add(new TrainingResultDto(_words[_currentIndex].Id, result, DateTime.UtcNow));
+        _currentIndex++;
+        _flipped = false;
+
+        if (_currentIndex >= _words.Count)
+        {
+            var sessionResult = await TrainingService.CompleteSessionAsync(
+                SessionId, new CompleteSessionDto(_results));
+
+            if (sessionResult != null)
+            {
+                Navigation.NavigateTo(
+                    $"/training/{SessionId}/results?red={sessionResult.RedCount}&orange={sessionResult.OrangeCount}&green={sessionResult.GreenCount}");
+            }
+            else
+            {
+                Snackbar.Add("Chyba při ukládání výsledků.", Severity.Error);
+            }
+        }
+    }
+}

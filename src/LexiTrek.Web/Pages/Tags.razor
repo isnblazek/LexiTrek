@@ -1,0 +1,82 @@
+@page "/tags"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject TagApiService TagService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Tagy - LexiTrek</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Tagy</MudText>
+
+<MudGrid Class="mb-4">
+    <MudItem xs="12" sm="6" md="4">
+        <MudTextField @bind-Value="_newTagName" Label="Nový tag" Variant="Variant.Outlined"
+                      Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Add"
+                      OnAdornmentClick="CreateTagAsync" />
+    </MudItem>
+</MudGrid>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else if (!_tags.Any())
+{
+    <MudAlert Severity="Severity.Info">Zatím nemáte žádné tagy.</MudAlert>
+}
+else
+{
+    <MudChipSet T="string">
+        @foreach (var tag in _tags)
+        {
+            <MudChip T="string" Color="Color.Primary" OnClose="@(() => DeleteTagAsync(tag.Id))">
+                @tag.Name
+            </MudChip>
+        }
+    </MudChipSet>
+}
+
+@code {
+    private List<TagDto> _tags = [];
+    private string _newTagName = "";
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _tags = await TagService.GetTagsAsync();
+        _loading = false;
+    }
+
+    private async Task CreateTagAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newTagName)) return;
+
+        var tag = await TagService.CreateTagAsync(new CreateTagDto(_newTagName));
+        if (tag != null)
+        {
+            _tags.Add(tag);
+            _newTagName = "";
+            Snackbar.Add("Tag vytvořen!", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Chyba při vytváření tagu.", Severity.Error);
+        }
+    }
+
+    private async Task DeleteTagAsync(Guid id)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Smazat tag", "Opravdu chcete smazat tento tag?",
+            yesText: "Smazat", cancelText: "Zrušit");
+
+        if (result == true)
+        {
+            if (await TagService.DeleteTagAsync(id))
+            {
+                _tags.RemoveAll(t => t.Id == id);
+                Snackbar.Add("Tag smazán.", Severity.Success);
+            }
+        }
+    }
+}

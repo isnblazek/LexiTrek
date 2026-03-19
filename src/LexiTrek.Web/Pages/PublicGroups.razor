@@ -1,0 +1,96 @@
+@page "/groups/public"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject GroupApiService GroupService
+@inject ISnackbar Snackbar
+
+<PageTitle>Veřejné skupiny - LexiTrek</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Veřejné skupiny</MudText>
+
+<MudTextField @bind-Value="_search" Label="Hledat..." Variant="Variant.Outlined" Class="mb-4"
+              Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search"
+              OnKeyUp="HandleSearch" Immediate="true" />
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else if (_result == null || !_result.Items.Any())
+{
+    <MudAlert Severity="Severity.Info">Žádné veřejné skupiny k zobrazení.</MudAlert>
+}
+else
+{
+    <MudGrid>
+        @foreach (var group in _result.Items)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6">@group.Name</MudText>
+                        <MudText Typo="Typo.body2">@group.WordCount slovíček</MudText>
+                        <MudText Typo="Typo.caption">Autor: @group.OwnerDisplayName</MudText>
+                        @if (!string.IsNullOrEmpty(group.Description))
+                        {
+                            <MudText Typo="Typo.caption" Class="mt-1">@group.Description</MudText>
+                        }
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled"
+                                   OnClick="@(() => SubscribeAsync(group.Id))">
+                            Přidat k mým
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+
+    @if (_result.TotalCount > _result.PageSize)
+    {
+        <MudPagination Class="mt-4" Count="@((int)Math.Ceiling((double)_result.TotalCount / _result.PageSize))"
+                       Selected="_page" SelectedChanged="PageChanged" />
+    }
+}
+
+@code {
+    private string? _search;
+    private PagedResult<GroupListDto>? _result;
+    private bool _loading = true;
+    private int _page = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _result = await GroupService.GetPublicGroupsAsync(_search, _page);
+        _loading = false;
+    }
+
+    private async Task HandleSearch(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            _page = 1;
+            await LoadAsync();
+        }
+    }
+
+    private async Task PageChanged(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+
+    private async Task SubscribeAsync(Guid groupId)
+    {
+        if (await GroupService.SubscribeAsync(groupId))
+            Snackbar.Add("Skupina přidána!", Severity.Success);
+        else
+            Snackbar.Add("Nepodařilo se přidat skupinu.", Severity.Error);
+    }
+}

@@ -1,0 +1,71 @@
+@page "/login"
+@layout LexiTrek.Web.Layout.MainLayout
+@inject AuthApiService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Přihlášení - LexiTrek</PageTitle>
+
+<div class="auth-container">
+    <MudContainer MaxWidth="MaxWidth.ExtraSmall">
+        <div class="text-center mb-6">
+            <MudText Typo="Typo.h3" Class="auth-logo mb-2">LexiTrek</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary">Přihlaste se ke svému účtu</MudText>
+        </div>
+
+        <MudCard Class="auth-card pa-2" Elevation="0">
+            <MudCardContent>
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <MudAlert Severity="Severity.Error" Class="mb-4" Variant="Variant.Filled" Dense="true">@_error</MudAlert>
+                }
+
+                <MudTextField @bind-Value="_email" Label="Email" InputType="InputType.Email"
+                              Variant="Variant.Outlined" Class="mb-4" Required="true"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Email" />
+                <MudTextField @bind-Value="_password" Label="Heslo" InputType="InputType.Password"
+                              Variant="Variant.Outlined" Class="mb-2" Required="true"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Lock" />
+            </MudCardContent>
+            <MudCardActions Class="flex-column pa-4 pt-0">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleLogin"
+                           Disabled="_loading" FullWidth="true" Size="Size.Large"
+                           Style="font-weight: 600; text-transform: none;">
+                    @if (_loading)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    }
+                    Přihlásit se
+                </MudButton>
+                <MudText Align="Align.Center" Class="mt-4" Typo="Typo.body2">
+                    Nemáte účet? <MudLink Href="/register" Typo="Typo.body2" Style="font-weight: 600;">Zaregistrujte se</MudLink>
+                </MudText>
+            </MudCardActions>
+        </MudCard>
+    </MudContainer>
+</div>
+
+@code {
+    private string _email = "";
+    private string _password = "";
+    private string? _error;
+    private bool _loading;
+
+    private async Task HandleLogin()
+    {
+        _error = null;
+        _loading = true;
+
+        var success = await AuthService.LoginAsync(new LoginDto(_email, _password));
+
+        if (success)
+        {
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            _error = "Neplatné přihlašovací údaje.";
+        }
+
+        _loading = false;
+    }
+}

@@ -1,0 +1,31 @@
+@inject NavigationManager Navigation
+
+<MudNavMenu>
+    <AuthorizeView>
+        <Authorized>
+            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
+                Dashboard
+            </MudNavLink>
+            <MudNavLink Href="/groups" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Folder">
+                Moje skupiny
+            </MudNavLink>
+            <MudNavLink Href="/groups/public" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Public">
+                Veřejné skupiny
+            </MudNavLink>
+            <MudNavLink Href="/tags" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Label">
+                Tagy
+            </MudNavLink>
+            <MudNavLink Href="/training/setup" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.FitnessCenter">
+                Trénink
+            </MudNavLink>
+        </Authorized>
+        <NotAuthorized>
+            <MudNavLink Href="/login" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Login">
+                Přihlášení
+            </MudNavLink>
+            <MudNavLink Href="/register" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.PersonAdd">
+                Registrace
+            </MudNavLink>
+        </NotAuthorized>
+    </AuthorizeView>
+</MudNavMenu>

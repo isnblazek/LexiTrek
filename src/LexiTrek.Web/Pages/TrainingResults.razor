@@ -1,0 +1,56 @@
+@page "/training/{SessionId:guid}/results"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject NavigationManager Navigation
+
+<PageTitle>Výsledky tréninku - LexiTrek</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4" Align="Align.Center">Trénink dokončen!</MudText>
+
+    <MudGrid Justify="Justify.Center" Class="mb-6">
+        <MudItem xs="4">
+            <MudPaper Class="pa-4 text-center" Elevation="2">
+                <MudText Typo="Typo.h4" Color="Color.Error">@_redCount</MudText>
+                <MudText>Nevím</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="4">
+            <MudPaper Class="pa-4 text-center" Elevation="2">
+                <MudText Typo="Typo.h4" Color="Color.Warning">@_orangeCount</MudText>
+                <MudText>Částečně</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="4">
+            <MudPaper Class="pa-4 text-center" Elevation="2">
+                <MudText Typo="Typo.h4" Color="Color.Success">@_greenCount</MudText>
+                <MudText>Vím</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Justify="Justify.Center">
+        <MudItem>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/training/setup">
+                Nový trénink
+            </MudButton>
+        </MudItem>
+        <MudItem>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/">
+                Dashboard
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    [Parameter] public Guid SessionId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "red")]
+    public int _redCount { get; set; }
+
+    [SupplyParameterFromQuery(Name = "orange")]
+    public int _orangeCount { get; set; }
+
+    [SupplyParameterFromQuery(Name = "green")]
+    public int _greenCount { get; set; }
+}
