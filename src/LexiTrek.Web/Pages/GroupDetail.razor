@@ -2,6 +2,7 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject GroupApiService GroupService
 @inject WordApiService WordService
+@inject TagApiService TagService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
@@ -110,6 +111,7 @@ else
             <MudTh>@LanguageHelper.GetDisplayName((Language)_group.SourceLanguage)</MudTh>
             <MudTh>@LanguageHelper.GetDisplayName((Language)_group.TargetLanguage)</MudTh>
             <MudTh>Poznámky</MudTh>
+            <MudTh>Tagy</MudTh>
             <MudTh>Akce</MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -117,6 +119,14 @@ else
             <MudTd>@context.Definition</MudTd>
             <MudTd>@context.Notes</MudTd>
             <MudTd>
+                @foreach (var tag in context.Tags)
+                {
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@tag.Name</MudChip>
+                }
+            </MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                               OnClick="@(() => EditWordAsync(context))" />
                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
                                OnClick="@(() => DeleteWordAsync(context.Id))" Color="Color.Error" />
             </MudTd>
@@ -219,6 +229,26 @@ else
             _newNotes = null;
             _showAddWord = false;
             Snackbar.Add("Slovíčko přidáno!", Severity.Success);
+        }
+    }
+
+    private async Task EditWordAsync(WordDto word)
+    {
+        var parameters = new DialogParameters<EditWordDialog>
+        {
+            { x => x.Word, word }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditWordDialog>("Upravit slovíčko", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            var updatedWord = (WordDto)result.Data!;
+            var index = _words.FindIndex(w => w.Id == word.Id);
+            if (index >= 0)
+                _words[index] = updatedWord;
+            Snackbar.Add("Slovíčko upraveno!", Severity.Success);
         }
     }
 

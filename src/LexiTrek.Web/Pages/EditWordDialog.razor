@@ -1,0 +1,97 @@
+@inject WordApiService WordService
+@inject TagApiService TagService
+
+<MudDialog>
+    <TitleContent>Upravit slovíčko</TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudTextField @bind-Value="_term" Label="Výraz" Variant="Variant.Outlined" Class="mb-3" Required="true" />
+            <MudTextField @bind-Value="_definition" Label="Překlad" Variant="Variant.Outlined" Class="mb-3" Required="true" />
+            <MudTextField @bind-Value="_notes" Label="Poznámky" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_tagsInput" Label="Tagy (oddělené čárkou)" Variant="Variant.Outlined"
+                          HelperText="Např. jídlo, sloveso, B2" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Zrušit</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveAsync" Disabled="_saving">Uložit</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public WordDto Word { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private bool _saving;
+    private string _term = "";
+    private string _definition = "";
+    private string? _notes;
+    private string _tagsInput = "";
+
+    protected override void OnInitialized()
+    {
+        _term = Word.Term;
+        _definition = Word.Definition;
+        _notes = Word.Notes;
+        _tagsInput = string.Join(", ", Word.Tags.Select(t => t.Name));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task SaveAsync()
+    {
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        _saving = true;
+
+        var updated = await WordService.UpdateWordAsync(Word.Id, new UpdateWordDto(_term, _definition, _notes));
+        if (updated == null)
+        {
+            _saving = false;
+            return;
+        }
+
+        var desiredTags = _tagsInput
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var allTags = await TagService.GetTagsAsync();
+
+        var resolvedTags = new List<TagDto>();
+        foreach (var tagName in desiredTags)
+        {
+            var existing = allTags.FirstOrDefault(t => string.Equals(t.Name, tagName, StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                resolvedTags.Add(existing);
+            }
+            else
+            {
+                var created = await TagService.CreateTagAsync(new CreateTagDto(tagName));
+                if (created != null)
+                {
+                    resolvedTags.Add(created);
+                    allTags.Add(created);
+                }
+            }
+        }
+
+        var currentTagIds = Word.Tags.Select(t => t.Id).ToHashSet();
+        var desiredTagIds = resolvedTags.Select(t => t.Id).ToHashSet();
+
+        var toAdd = desiredTagIds.Except(currentTagIds).ToList();
+        var toRemove = currentTagIds.Except(desiredTagIds).ToList();
+
+        if (toAdd.Count > 0)
+            await TagService.AssignTagsAsync(Word.Id, new AssignTagsDto(toAdd));
+
+        foreach (var tagId in toRemove)
+            await TagService.RemoveTagAsync(Word.Id, tagId);
+
+        var resultWord = updated with { Tags = resolvedTags };
+        MudDialog.Close(DialogResult.Ok(resultWord));
+    }
+}
