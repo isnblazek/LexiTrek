@@ -39,7 +39,7 @@
                     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
                         Dashboard
                     </MudNavLink>
-                    <MudNavLink Href="/groups" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Folder">
+                    <MudNavLink Href="/groups" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Folder">
                         Moje skupiny
                     </MudNavLink>
                     <MudNavLink Href="/groups/public" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Public">
@@ -55,7 +55,7 @@
                 </MudNavMenu>
             </MudDrawer>
 
-            <MudMainContent Class="pa-6" Style="background: #F8FAFC; min-height: 100vh;">
+            <MudMainContent Class="pa-6 pt-16" Style="background: #F8FAFC; min-height: 100vh;">
                 @Body
             </MudMainContent>
         </MudLayout>

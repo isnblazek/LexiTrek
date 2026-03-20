@@ -32,6 +32,24 @@ public class JwtAuthStateProvider : AuthenticationStateProvider
             }
 
             var identity = new ClaimsIdentity(jwt.Claims, "jwt");
+
+            // Ensure ClaimTypes.NameIdentifier exists — JWT may store the user ID
+            // under short names ("sub", "nameid") due to outbound claim type mapping
+            if (identity.FindFirst(ClaimTypes.NameIdentifier) == null)
+            {
+                string? userId = null;
+                foreach (var key in new[] { "sub", "nameid" })
+                {
+                    if (jwt.Payload.TryGetValue(key, out var val) && val != null)
+                    {
+                        userId = val.ToString();
+                        break;
+                    }
+                }
+                if (userId != null)
+                    identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, userId));
+            }
+
             return new AuthenticationState(new ClaimsPrincipal(identity));
         }
         catch

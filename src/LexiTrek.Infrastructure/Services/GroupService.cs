@@ -57,7 +57,8 @@ public class GroupService : IGroupService
             group.OwnerId, group.Owner.DisplayName,
             (int)group.Visibility, group.Words.Count,
             group.DictionaryId, (int)group.Dictionary.SourceLanguage, (int)group.Dictionary.TargetLanguage,
-            group.CreatedAt, group.UpdatedAt);
+            group.CreatedAt, group.UpdatedAt,
+            IsOwner: group.OwnerId == userId);
     }
 
     public async Task<GroupDto> CreateGroupAsync(CreateGroupDto dto, string userId)
@@ -88,7 +89,8 @@ public class GroupService : IGroupService
             group.OwnerId, user.DisplayName,
             (int)group.Visibility, 0,
             group.DictionaryId, (int)dictionary.SourceLanguage, (int)dictionary.TargetLanguage,
-            group.CreatedAt, group.UpdatedAt);
+            group.CreatedAt, group.UpdatedAt,
+            IsOwner: true);
     }
 
     public async Task<GroupDto> UpdateGroupAsync(Guid id, UpdateGroupDto dto, string userId)
@@ -115,7 +117,8 @@ public class GroupService : IGroupService
             group.OwnerId, group.Owner.DisplayName,
             (int)group.Visibility, group.Words.Count,
             group.DictionaryId, (int)group.Dictionary.SourceLanguage, (int)group.Dictionary.TargetLanguage,
-            group.CreatedAt, group.UpdatedAt);
+            group.CreatedAt, group.UpdatedAt,
+            IsOwner: true);
     }
 
     public async Task DeleteGroupAsync(Guid id, string userId)

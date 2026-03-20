@@ -15,7 +15,8 @@ public record GroupDto(
     int SourceLanguage,
     int TargetLanguage,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    bool IsOwner
 );
 
 public record GroupListDto(
