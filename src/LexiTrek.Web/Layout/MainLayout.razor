@@ -1,6 +1,8 @@
 @inherits LayoutComponentBase
 @inject AuthApiService AuthService
+@inject DictionaryStateService DictState
 @inject NavigationManager Navigation
+@implements IDisposable
 
 <AuthorizeView>
     <Authorized>
@@ -9,7 +11,23 @@
                 <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
                                OnClick="@ToggleDrawer" />
                 <MudText Typo="Typo.h6" Class="ml-3" Style="font-weight: 800; letter-spacing: -0.5px;">LexiTrek</MudText>
+
+                @if (DictState.Dictionaries.Any())
+                {
+                    <MudSelect T="Guid?" Value="DictState.SelectedDictionaryId" ValueChanged="OnDictionaryChanged"
+                               Class="ml-4 appbar-dictionary-select" Variant="Variant.Outlined"
+                               Dense="true" Margin="Margin.Dense"
+                               Style="max-width: 280px; color: white;">
+                        @foreach (var dict in DictState.Dictionaries)
+                        {
+                            <MudSelectItem T="Guid?" Value="@((Guid?)dict.Id)">@dict.SourceLanguage ↔ @dict.TargetLanguage</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+
                 <MudSpacer />
+                <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit"
+                               Href="/settings" />
                 <MudMenu Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight">
                     <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="LogoutAsync">Odhlásit se</MudMenuItem>
                 </MudMenu>
@@ -50,11 +68,21 @@
 @code {
     private bool _drawerOpen = true;
 
+    protected override async Task OnInitializedAsync()
+    {
+        DictState.OnChange += StateHasChanged;
+        await DictState.LoadAsync();
+    }
+
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private void OnDictionaryChanged(Guid? newId) => DictState.SetSelectedDictionary(newId);
 
     private async Task LogoutAsync()
     {
         await AuthService.LogoutAsync();
         Navigation.NavigateTo("/");
     }
+
+    public void Dispose() => DictState.OnChange -= StateHasChanged;
 }

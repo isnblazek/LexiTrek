@@ -1,6 +1,8 @@
 @page "/"
 @inject GroupApiService GroupService
+@inject DictionaryStateService DictState
 @inject NavigationManager Navigation
+@implements IDisposable
 
 <PageTitle>LexiTrek - Učte se slovíčka chytře</PageTitle>
 
@@ -20,7 +22,7 @@
                             </MudAvatar>
                             <div>
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">Moje skupiny</MudText>
-                                <MudText Typo="Typo.h4">@_groups.Count</MudText>
+                                <MudText Typo="Typo.h4">@FilteredGroups.Count()</MudText>
                             </div>
                         </div>
                     </MudCardContent>
@@ -39,7 +41,7 @@
                             </MudAvatar>
                             <div>
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">Celkem slovíček</MudText>
-                                <MudText Typo="Typo.h4">@_groups.Sum(g => g.WordCount)</MudText>
+                                <MudText Typo="Typo.h4">@FilteredGroups.Sum(g => g.WordCount)</MudText>
                             </div>
                         </div>
                     </MudCardContent>
@@ -66,11 +68,11 @@
             </MudItem>
         </MudGrid>
 
-        @if (_groups.Any())
+        @if (FilteredGroups.Any())
         {
             <MudText Typo="Typo.h5" Class="mt-8 mb-4">Vaše skupiny</MudText>
             <MudGrid Spacing="3">
-                @foreach (var group in _groups.Take(6))
+                @foreach (var group in FilteredGroups.Take(6))
                 {
                     <MudItem xs="12" sm="6" md="4">
                         <MudCard Class="group-card cursor-pointer" @onclick="@(() => Navigation.NavigateTo($"/groups/{group.Id}"))">
@@ -166,8 +168,8 @@
                         </MudItem>
                         <MudItem xs="4">
                             <div class="text-center">
-                                <MudText Class="stat-number" Style="color: white;">CZ/EN</MudText>
-                                <MudText Style="color: rgba(255,255,255,0.7);">jazykové páry</MudText>
+                                <MudText Class="stat-number" Style="color: white;">N</MudText>
+                                <MudText Style="color: rgba(255,255,255,0.7);">jazykových párů</MudText>
                             </div>
                         </MudItem>
                     </MudGrid>
@@ -288,11 +290,17 @@
 @code {
     private List<GroupListDto> _groups = [];
 
+    private IEnumerable<GroupListDto> FilteredGroups =>
+        DictState.SelectedDictionaryId.HasValue
+            ? _groups.Where(g => g.DictionaryId == DictState.SelectedDictionaryId.Value)
+            : _groups;
+
     [CascadingParameter]
     private Task<AuthenticationState>? AuthState { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        DictState.OnChange += OnDictionaryChanged;
         if (AuthState != null)
         {
             var state = await AuthState;
@@ -302,4 +310,8 @@
             }
         }
     }
+
+    private void OnDictionaryChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => DictState.OnChange -= OnDictionaryChanged;
 }

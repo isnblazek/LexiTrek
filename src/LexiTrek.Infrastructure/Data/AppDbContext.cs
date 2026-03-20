@@ -8,6 +8,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+    public DbSet<Dictionary> Dictionaries => Set<Dictionary>();
     public DbSet<WordGroup> WordGroups => Set<WordGroup>();
     public DbSet<Word> Words => Set<Word>();
     public DbSet<Tag> Tags => Set<Tag>();

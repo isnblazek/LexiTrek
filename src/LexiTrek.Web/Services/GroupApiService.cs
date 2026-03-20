@@ -37,10 +37,11 @@ public class GroupApiService
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<PagedResult<GroupListDto>?> GetPublicGroupsAsync(string? search, int page = 1)
+    public async Task<PagedResult<GroupListDto>?> GetPublicGroupsAsync(string? search, int page = 1, Guid? dictionaryId = null)
     {
         var url = $"api/groups/public?page={page}&pageSize=20";
         if (!string.IsNullOrWhiteSpace(search)) url += $"&search={Uri.EscapeDataString(search)}";
+        if (dictionaryId.HasValue) url += $"&dictionaryId={dictionaryId.Value}";
         return await _http.GetFromJsonAsync<PagedResult<GroupListDto>>(url);
     }
 

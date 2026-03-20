@@ -71,7 +71,7 @@ public class TrainingService : ITrainingService
             .Where(w => selectedIds.Contains(w.Id))
             .Include(w => w.Group)
             .Select(w => new TrainingWordDto(
-                w.Id, w.Czech, w.English, w.Notes,
+                w.Id, w.Term, w.Definition, w.Notes,
                 w.GroupId, w.Group.Name))
             .ToListAsync();
     }
@@ -158,8 +158,8 @@ public class TrainingService : ITrainingService
 
         var wordResults = dto.Results.Select(r => new WordResultDto(
             r.WordId,
-            words.TryGetValue(r.WordId, out var w) ? w.Czech : "",
-            w?.English ?? "",
+            words.TryGetValue(r.WordId, out var w) ? w.Term : "",
+            w?.Definition ?? "",
             r.Result
         )).ToList();
 

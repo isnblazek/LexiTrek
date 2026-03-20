@@ -17,7 +17,13 @@ public class WordGroupConfiguration : IEntityTypeConfiguration<WordGroup>
             .HasForeignKey(g => g.OwnerId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasOne(g => g.Dictionary)
+            .WithMany(d => d.WordGroups)
+            .HasForeignKey(g => g.DictionaryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(g => g.OwnerId);
         builder.HasIndex(g => g.Visibility);
+        builder.HasIndex(g => g.DictionaryId);
     }
 }

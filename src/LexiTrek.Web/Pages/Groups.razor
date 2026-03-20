@@ -1,8 +1,10 @@
 @page "/groups"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject GroupApiService GroupService
+@inject DictionaryStateService DictState
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
+@implements IDisposable
 
 <PageTitle>Moje skupiny - LexiTrek</PageTitle>
 
@@ -17,14 +19,14 @@
 {
     <MudProgressLinear Indeterminate="true" />
 }
-else if (!_groups.Any())
+else if (!FilteredGroups.Any())
 {
     <MudAlert Severity="Severity.Info">Zatím nemáte žádné skupiny. Vytvořte si první!</MudAlert>
 }
 else
 {
     <MudGrid>
-        @foreach (var group in _groups)
+        @foreach (var group in FilteredGroups)
         {
             <MudItem xs="12" sm="6" md="4">
                 <MudCard>
@@ -35,6 +37,9 @@ else
                                  Color="@(group.Visibility == 1 ? Color.Success : Color.Default)">
                             @(group.Visibility == 1 ? "Veřejná" : "Soukromá")
                         </MudChip>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @group.SourceLanguage ↔ @group.TargetLanguage
+                        </MudText>
                         @if (!string.IsNullOrEmpty(group.Description))
                         {
                             <MudText Typo="Typo.caption" Class="mt-2">@group.Description</MudText>
@@ -56,9 +61,19 @@ else
     private List<GroupListDto> _groups = [];
     private bool _loading = true;
 
+    private IEnumerable<GroupListDto> FilteredGroups =>
+        DictState.SelectedDictionaryId.HasValue
+            ? _groups.Where(g => g.DictionaryId == DictState.SelectedDictionaryId.Value)
+            : _groups;
+
     protected override async Task OnInitializedAsync()
     {
+        DictState.OnChange += OnDictionaryChanged;
         _groups = await GroupService.GetUserGroupsAsync();
         _loading = false;
     }
+
+    private void OnDictionaryChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => DictState.OnChange -= OnDictionaryChanged;
 }

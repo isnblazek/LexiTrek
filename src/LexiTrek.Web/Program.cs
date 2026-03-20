@@ -26,6 +26,8 @@ builder.Services.AddScoped(sp =>
     sp.GetRequiredService<IHttpClientFactory>().CreateClient("LexiTrek"));
 
 builder.Services.AddScoped<AuthApiService>();
+builder.Services.AddScoped<DictionaryApiService>();
+builder.Services.AddScoped<DictionaryStateService>();
 builder.Services.AddScoped<GroupApiService>();
 builder.Services.AddScoped<WordApiService>();
 builder.Services.AddScoped<TagApiService>();

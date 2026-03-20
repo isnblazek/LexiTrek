@@ -56,6 +56,7 @@ public static class DependencyInjection
 
         // Services
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IDictionaryService, DictionaryService>();
         services.AddScoped<IGroupService, GroupService>();
         services.AddScoped<IWordService, WordService>();
         services.AddScoped<ITagService, TagService>();

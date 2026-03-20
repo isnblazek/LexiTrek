@@ -1,6 +1,6 @@
 namespace LexiTrek.Shared.DTOs;
 
-public record CreateGroupDto(string Name, string? Description, int Visibility);
+public record CreateGroupDto(string Name, string? Description, int Visibility, Guid DictionaryId);
 public record UpdateGroupDto(string Name, string? Description, int Visibility);
 
 public record GroupDto(
@@ -11,6 +11,9 @@ public record GroupDto(
     string OwnerDisplayName,
     int Visibility,
     int WordCount,
+    Guid DictionaryId,
+    string SourceLanguage,
+    string TargetLanguage,
     DateTime CreatedAt,
     DateTime UpdatedAt
 );
@@ -21,8 +24,11 @@ public record GroupListDto(
     string? Description,
     string OwnerDisplayName,
     int Visibility,
-    int WordCount
+    int WordCount,
+    Guid DictionaryId,
+    string SourceLanguage,
+    string TargetLanguage
 );
 
-public record PublicGroupsRequest(string? Search, int Page = 1, int PageSize = 20);
+public record PublicGroupsRequest(string? Search, Guid? DictionaryId = null, int Page = 1, int PageSize = 20);
 public record PagedResult<T>(List<T> Items, int TotalCount, int Page, int PageSize);

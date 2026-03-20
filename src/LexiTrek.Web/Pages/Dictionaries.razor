@@ -1,0 +1,10 @@
+@page "/dictionaries"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject NavigationManager Navigation
+
+@code {
+    protected override void OnInitialized()
+    {
+        Navigation.NavigateTo("/settings", replace: true);
+    }
+}

@@ -173,6 +173,55 @@ h1:focus {
     background: linear-gradient(135deg, #EEF2FF, #F5F3FF) !important;
 }
 
+/* ── AppBar dictionary select ────────────────────── */
+.appbar-dictionary-select {
+    background: rgba(255,255,255,0.15) !important;
+    border-radius: 8px;
+}
+
+.appbar-dictionary-select:hover {
+    background: rgba(255,255,255,0.22) !important;
+}
+
+.appbar-dictionary-select .mud-input {
+    color: white !important;
+}
+
+.appbar-dictionary-select .mud-input-outlined-border {
+    border-color: rgba(255,255,255,0.25) !important;
+    border-radius: 8px !important;
+}
+
+.appbar-dictionary-select:hover .mud-input-outlined-border {
+    border-color: rgba(255,255,255,0.45) !important;
+}
+
+.appbar-dictionary-select .mud-select-input,
+.appbar-dictionary-select .mud-input > input {
+    color: white !important;
+}
+
+.appbar-dictionary-select .mud-icon-root {
+    color: rgba(255,255,255,0.8) !important;
+}
+
+.appbar-dictionary-select .mud-input-label {
+    color: rgba(255,255,255,0.7) !important;
+}
+
+.appbar-dictionary-select .mud-input-underline::before,
+.appbar-dictionary-select .mud-input-underline::after {
+    border-color: rgba(255,255,255,0.5) !important;
+}
+
+.appbar-dictionary-select .mud-input-outlined-border.mud-input-outlined-border-focused {
+    border-color: rgba(255,255,255,0.7) !important;
+}
+
+.appbar-dictionary-select .mud-input-label-inputcontrol {
+    color: rgba(255,255,255,0.7) !important;
+}
+
 /* ── Nav ──────────────────────────────────────────── */
 .mud-nav-link.active {
     background-color: #EEF2FF !important;

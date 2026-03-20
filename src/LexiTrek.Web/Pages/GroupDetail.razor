@@ -29,6 +29,9 @@ else
                      Color="@(_group.Visibility == 1 ? Color.Success : Color.Default)">
                 @(_group.Visibility == 1 ? "Veřejná" : "Soukromá")
             </MudChip>
+            <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                @_group.SourceLanguage ↔ @_group.TargetLanguage
+            </MudChip>
             <MudText Typo="Typo.caption" Class="ml-2">Autor: @_group.OwnerDisplayName</MudText>
         </MudItem>
 
@@ -51,10 +54,10 @@ else
                 <MudText Typo="Typo.h6" Class="mb-2">Nové slovíčko</MudText>
                 <MudGrid>
                     <MudItem xs="12" sm="4">
-                        <MudTextField @bind-Value="_newCzech" Label="Česky" Variant="Variant.Outlined" />
+                        <MudTextField @bind-Value="_newTerm" Label="@_group.SourceLanguage" Variant="Variant.Outlined" />
                     </MudItem>
                     <MudItem xs="12" sm="4">
-                        <MudTextField @bind-Value="_newEnglish" Label="Anglicky" Variant="Variant.Outlined" />
+                        <MudTextField @bind-Value="_newDefinition" Label="@_group.TargetLanguage" Variant="Variant.Outlined" />
                     </MudItem>
                     <MudItem xs="12" sm="4">
                         <MudTextField @bind-Value="_newNotes" Label="Poznámky" Variant="Variant.Outlined" />
@@ -70,14 +73,14 @@ else
 
     <MudTable Items="_words" Hover="true" Striped="true" Class="mt-4" Loading="_wordsLoading">
         <HeaderContent>
-            <MudTh>Česky</MudTh>
-            <MudTh>Anglicky</MudTh>
+            <MudTh>@_group.SourceLanguage</MudTh>
+            <MudTh>@_group.TargetLanguage</MudTh>
             <MudTh>Poznámky</MudTh>
             <MudTh>Akce</MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd>@context.Czech</MudTd>
-            <MudTd>@context.English</MudTd>
+            <MudTd>@context.Term</MudTd>
+            <MudTd>@context.Definition</MudTd>
             <MudTd>@context.Notes</MudTd>
             <MudTd>
                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
@@ -98,8 +101,8 @@ else
     private bool _loading = true;
     private bool _wordsLoading;
     private bool _showAddWord;
-    private string _newCzech = "";
-    private string _newEnglish = "";
+    private string _newTerm = "";
+    private string _newDefinition = "";
     private string? _newNotes;
 
     protected override async Task OnInitializedAsync()
@@ -114,14 +117,14 @@ else
 
     private async Task AddWordAsync()
     {
-        if (string.IsNullOrWhiteSpace(_newCzech) || string.IsNullOrWhiteSpace(_newEnglish)) return;
+        if (string.IsNullOrWhiteSpace(_newTerm) || string.IsNullOrWhiteSpace(_newDefinition)) return;
 
-        var word = await WordService.CreateWordAsync(Id, new CreateWordDto(_newCzech, _newEnglish, _newNotes));
+        var word = await WordService.CreateWordAsync(Id, new CreateWordDto(_newTerm, _newDefinition, _newNotes));
         if (word != null)
         {
             _words.Add(word);
-            _newCzech = "";
-            _newEnglish = "";
+            _newTerm = "";
+            _newDefinition = "";
             _newNotes = null;
             _showAddWord = false;
             Snackbar.Add("Slovíčko přidáno!", Severity.Success);

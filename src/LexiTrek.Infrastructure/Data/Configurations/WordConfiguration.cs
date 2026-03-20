@@ -9,8 +9,8 @@ public class WordConfiguration : IEntityTypeConfiguration<Word>
     public void Configure(EntityTypeBuilder<Word> builder)
     {
         builder.HasKey(w => w.Id);
-        builder.Property(w => w.Czech).HasMaxLength(500).IsRequired();
-        builder.Property(w => w.English).HasMaxLength(500).IsRequired();
+        builder.Property(w => w.Term).HasMaxLength(500).IsRequired();
+        builder.Property(w => w.Definition).HasMaxLength(500).IsRequired();
         builder.Property(w => w.Notes).HasMaxLength(1000);
 
         builder.HasOne(w => w.Group)

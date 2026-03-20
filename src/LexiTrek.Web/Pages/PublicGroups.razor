@@ -1,7 +1,9 @@
 @page "/groups/public"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject GroupApiService GroupService
+@inject DictionaryStateService DictState
 @inject ISnackbar Snackbar
+@implements IDisposable
 
 <PageTitle>Veřejné skupiny - LexiTrek</PageTitle>
 
@@ -30,6 +32,9 @@ else
                         <MudText Typo="Typo.h6">@group.Name</MudText>
                         <MudText Typo="Typo.body2">@group.WordCount slovíček</MudText>
                         <MudText Typo="Typo.caption">Autor: @group.OwnerDisplayName</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @group.SourceLanguage ↔ @group.TargetLanguage
+                        </MudText>
                         @if (!string.IsNullOrEmpty(group.Description))
                         {
                             <MudText Typo="Typo.caption" Class="mt-1">@group.Description</MudText>
@@ -61,14 +66,22 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        DictState.OnChange += OnDictionaryChanged;
         await LoadAsync();
     }
 
     private async Task LoadAsync()
     {
         _loading = true;
-        _result = await GroupService.GetPublicGroupsAsync(_search, _page);
+        _result = await GroupService.GetPublicGroupsAsync(_search, _page, DictState.SelectedDictionaryId);
         _loading = false;
+    }
+
+    private async void OnDictionaryChanged()
+    {
+        _page = 1;
+        await LoadAsync();
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task HandleSearch(KeyboardEventArgs e)
@@ -93,4 +106,6 @@ else
         else
             Snackbar.Add("Nepodařilo se přidat skupinu.", Severity.Error);
     }
+
+    public void Dispose() => DictState.OnChange -= OnDictionaryChanged;
 }

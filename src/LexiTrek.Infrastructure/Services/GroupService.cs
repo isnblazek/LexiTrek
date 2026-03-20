@@ -17,16 +17,19 @@ public class GroupService : IGroupService
     {
         var owned = await _db.WordGroups
             .Where(g => g.OwnerId == userId)
+            .Include(g => g.Dictionary)
             .Select(g => new GroupListDto(
                 g.Id, g.Name, g.Description,
-                g.Owner.DisplayName, (int)g.Visibility, g.Words.Count))
+                g.Owner.DisplayName, (int)g.Visibility, g.Words.Count,
+                g.DictionaryId, g.Dictionary.SourceLanguage, g.Dictionary.TargetLanguage))
             .ToListAsync();
 
         var subscribed = await _db.GroupSubscriptions
             .Where(s => s.UserId == userId)
             .Select(s => new GroupListDto(
                 s.Group.Id, s.Group.Name, s.Group.Description,
-                s.Group.Owner.DisplayName, (int)s.Group.Visibility, s.Group.Words.Count))
+                s.Group.Owner.DisplayName, (int)s.Group.Visibility, s.Group.Words.Count,
+                s.Group.DictionaryId, s.Group.Dictionary.SourceLanguage, s.Group.Dictionary.TargetLanguage))
             .ToListAsync();
 
         return [.. owned, .. subscribed];
@@ -37,6 +40,7 @@ public class GroupService : IGroupService
         var group = await _db.WordGroups
             .Include(g => g.Owner)
             .Include(g => g.Words)
+            .Include(g => g.Dictionary)
             .FirstOrDefaultAsync(g => g.Id == id)
             ?? throw new KeyNotFoundException("Group not found");
 
@@ -52,6 +56,7 @@ public class GroupService : IGroupService
             group.Id, group.Name, group.Description,
             group.OwnerId, group.Owner.DisplayName,
             (int)group.Visibility, group.Words.Count,
+            group.DictionaryId, group.Dictionary.SourceLanguage, group.Dictionary.TargetLanguage,
             group.CreatedAt, group.UpdatedAt);
     }
 
@@ -60,12 +65,16 @@ public class GroupService : IGroupService
         var user = await _db.Users.FindAsync(userId)
             ?? throw new KeyNotFoundException("User not found");
 
+        var dictionary = await _db.Dictionaries.FindAsync(dto.DictionaryId)
+            ?? throw new KeyNotFoundException("Dictionary not found");
+
         var group = new WordGroup
         {
             Id = Guid.NewGuid(),
             Name = dto.Name,
             Description = dto.Description,
             OwnerId = userId,
+            DictionaryId = dto.DictionaryId,
             Visibility = (Visibility)dto.Visibility,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -78,6 +87,7 @@ public class GroupService : IGroupService
             group.Id, group.Name, group.Description,
             group.OwnerId, user.DisplayName,
             (int)group.Visibility, 0,
+            group.DictionaryId, dictionary.SourceLanguage, dictionary.TargetLanguage,
             group.CreatedAt, group.UpdatedAt);
     }
 
@@ -86,6 +96,7 @@ public class GroupService : IGroupService
         var group = await _db.WordGroups
             .Include(g => g.Owner)
             .Include(g => g.Words)
+            .Include(g => g.Dictionary)
             .FirstOrDefaultAsync(g => g.Id == id)
             ?? throw new KeyNotFoundException("Group not found");
 
@@ -103,6 +114,7 @@ public class GroupService : IGroupService
             group.Id, group.Name, group.Description,
             group.OwnerId, group.Owner.DisplayName,
             (int)group.Visibility, group.Words.Count,
+            group.DictionaryId, group.Dictionary.SourceLanguage, group.Dictionary.TargetLanguage,
             group.CreatedAt, group.UpdatedAt);
     }
 
@@ -123,6 +135,9 @@ public class GroupService : IGroupService
         var query = _db.WordGroups
             .Where(g => g.Visibility == Visibility.Public);
 
+        if (request.DictionaryId.HasValue)
+            query = query.Where(g => g.DictionaryId == request.DictionaryId.Value);
+
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var search = request.Search.ToLower();
@@ -139,7 +154,8 @@ public class GroupService : IGroupService
             .Take(request.PageSize)
             .Select(g => new GroupListDto(
                 g.Id, g.Name, g.Description,
-                g.Owner.DisplayName, (int)g.Visibility, g.Words.Count))
+                g.Owner.DisplayName, (int)g.Visibility, g.Words.Count,
+                g.DictionaryId, g.Dictionary.SourceLanguage, g.Dictionary.TargetLanguage))
             .ToListAsync();
 
         return new PagedResult<GroupListDto>(items, totalCount, request.Page, request.PageSize);

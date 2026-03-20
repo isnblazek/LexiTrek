@@ -84,9 +84,10 @@ public class GroupsController : ControllerBase
 
     [HttpGet("public")]
     public async Task<ActionResult<PagedResult<GroupListDto>>> GetPublicGroups(
-        [FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        [FromQuery] string? search, [FromQuery] Guid? dictionaryId = null,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var request = new PublicGroupsRequest(search, page, pageSize);
+        var request = new PublicGroupsRequest(search, dictionaryId, page, pageSize);
         return Ok(await _groupService.GetPublicGroupsAsync(request));
     }
 

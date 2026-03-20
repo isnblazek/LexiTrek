@@ -26,12 +26,12 @@ else if (_currentIndex < _words.Count)
             <MudCardContent Class="d-flex flex-column justify-center align-center" Style="min-height: 250px;">
                 @if (!_flipped)
                 {
-                    <MudText Typo="Typo.h3">@_words[_currentIndex].Czech</MudText>
+                    <MudText Typo="Typo.h3">@_words[_currentIndex].Term</MudText>
                     <MudText Typo="Typo.caption" Class="mt-2">Klikněte pro zobrazení odpovědi</MudText>
                 }
                 else
                 {
-                    <MudText Typo="Typo.h3" Color="Color.Primary">@_words[_currentIndex].English</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Primary">@_words[_currentIndex].Definition</MudText>
                     @if (!string.IsNullOrEmpty(_words[_currentIndex].Notes))
                     {
                         <MudText Typo="Typo.body2" Class="mt-2">@_words[_currentIndex].Notes</MudText>

@@ -16,8 +16,8 @@ public record TrainingResultDto(Guid WordId, int Result, DateTime AnsweredAt);
 
 public record TrainingWordDto(
     Guid Id,
-    string Czech,
-    string English,
+    string Term,
+    string Definition,
     string? Notes,
     Guid GroupId,
     string GroupName
@@ -36,7 +36,7 @@ public record SessionResultsDto(
 
 public record WordResultDto(
     Guid WordId,
-    string Czech,
-    string English,
+    string Term,
+    string Definition,
     int Result
 );

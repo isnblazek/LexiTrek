@@ -1,10 +1,12 @@
 @page "/training/setup"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject GroupApiService GroupService
+@inject DictionaryStateService DictState
 @inject TagApiService TagService
 @inject TrainingApiService TrainingService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@implements IDisposable
 
 <PageTitle>Trénink - LexiTrek</PageTitle>
 
@@ -21,7 +23,7 @@
             @if (_mode == 0)
             {
                 <MudSelect @bind-Value="_selectedGroupId" Label="Vyberte skupinu" Variant="Variant.Outlined" Class="mt-4">
-                    @foreach (var group in _groups)
+                    @foreach (var group in FilteredGroups)
                     {
                         <MudSelectItem Value="group.Id">@group.Name (@group.WordCount slovíček)</MudSelectItem>
                     }
@@ -58,11 +60,17 @@
     private List<GroupListDto> _groups = [];
     private List<TagDto> _tags = [];
 
+    private IEnumerable<GroupListDto> FilteredGroups =>
+        DictState.SelectedDictionaryId.HasValue
+            ? _groups.Where(g => g.DictionaryId == DictState.SelectedDictionaryId.Value)
+            : _groups;
+
     [SupplyParameterFromQuery(Name = "groupId")]
     public string? PreselectedGroupId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        DictState.OnChange += OnDictionaryChanged;
         _groups = await GroupService.GetUserGroupsAsync();
         _tags = await TagService.GetTagsAsync();
 
@@ -71,9 +79,9 @@
             _selectedGroupId = gid;
             _mode = 0;
         }
-        else if (_groups.Any())
+        else if (FilteredGroups.Any())
         {
-            _selectedGroupId = _groups[0].Id;
+            _selectedGroupId = FilteredGroups.First().Id;
         }
 
         if (_tags.Any())
@@ -81,6 +89,8 @@
             _selectedTagId = _tags[0].Id;
         }
     }
+
+    private void OnDictionaryChanged() => InvokeAsync(StateHasChanged);
 
     private async Task StartTrainingAsync()
     {
@@ -111,4 +121,6 @@
 
         _loading = false;
     }
+
+    public void Dispose() => DictState.OnChange -= OnDictionaryChanged;
 }

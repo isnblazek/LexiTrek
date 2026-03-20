@@ -29,7 +29,7 @@ public class WordService : IWordService
         return await _db.Words
             .Where(w => w.GroupId == groupId)
             .Select(w => new WordDto(
-                w.Id, w.GroupId, w.Czech, w.English, w.Notes,
+                w.Id, w.GroupId, w.Term, w.Definition, w.Notes,
                 w.WordTags.Select(wt => new TagDto(wt.Tag.Id, wt.Tag.Name)).ToList(),
                 w.CreatedAt, w.UpdatedAt))
             .ToListAsync();
@@ -47,8 +47,8 @@ public class WordService : IWordService
         {
             Id = Guid.NewGuid(),
             GroupId = groupId,
-            Czech = dto.Czech,
-            English = dto.English,
+            Term = dto.Term,
+            Definition = dto.Definition,
             Notes = dto.Notes,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -57,7 +57,7 @@ public class WordService : IWordService
         _db.Words.Add(word);
         await _db.SaveChangesAsync();
 
-        return new WordDto(word.Id, word.GroupId, word.Czech, word.English, word.Notes, [], word.CreatedAt, word.UpdatedAt);
+        return new WordDto(word.Id, word.GroupId, word.Term, word.Definition, word.Notes, [], word.CreatedAt, word.UpdatedAt);
     }
 
     public async Task<WordDto> UpdateWordAsync(Guid wordId, UpdateWordDto dto, string userId)
@@ -71,15 +71,15 @@ public class WordService : IWordService
         if (word.Group.OwnerId != userId)
             throw new UnauthorizedAccessException("Only the group owner can update words");
 
-        word.Czech = dto.Czech;
-        word.English = dto.English;
+        word.Term = dto.Term;
+        word.Definition = dto.Definition;
         word.Notes = dto.Notes;
         word.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
 
         return new WordDto(
-            word.Id, word.GroupId, word.Czech, word.English, word.Notes,
+            word.Id, word.GroupId, word.Term, word.Definition, word.Notes,
             word.WordTags.Select(wt => new TagDto(wt.Tag.Id, wt.Tag.Name)).ToList(),
             word.CreatedAt, word.UpdatedAt);
     }
