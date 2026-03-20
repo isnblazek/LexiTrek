@@ -16,10 +16,10 @@
             <MudTextField @bind-Value="_name" Label="Název" Variant="Variant.Outlined" Class="mb-3" Required="true" />
             <MudTextField @bind-Value="_description" Label="Popis" Variant="Variant.Outlined" Class="mb-3" Lines="3" />
             <MudSelect @bind-Value="_dictionaryId" Label="Slovník" Variant="Variant.Outlined" Class="mb-3"
-                       Required="true" ToStringFunc="@(id => _dictionaries.FirstOrDefault(d => d.Id == id) is {} d ? $"{d.SourceLanguage} ↔ {d.TargetLanguage}" : "")">
+                       Required="true" ToStringFunc="@(id => _dictionaries.FirstOrDefault(d => d.Id == id) is {} d ? $"{LanguageHelper.GetDisplayName((Language)d.SourceLanguage)} ↔ {LanguageHelper.GetDisplayName((Language)d.TargetLanguage)}" : "")">
                 @foreach (var dict in _dictionaries)
                 {
-                    <MudSelectItem Value="dict.Id">@dict.SourceLanguage ↔ @dict.TargetLanguage</MudSelectItem>
+                    <MudSelectItem Value="dict.Id">@LanguageHelper.GetDisplayName((Language)dict.SourceLanguage) ↔ @LanguageHelper.GetDisplayName((Language)dict.TargetLanguage)</MudSelectItem>
                 }
             </MudSelect>
             <MudSelect @bind-Value="_visibility" Label="Viditelnost" Variant="Variant.Outlined">

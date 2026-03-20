@@ -30,7 +30,7 @@ else
                 @(_group.Visibility == 1 ? "Veřejná" : "Soukromá")
             </MudChip>
             <MudChip T="string" Size="Size.Small" Color="Color.Info">
-                @_group.SourceLanguage ↔ @_group.TargetLanguage
+                @LanguageHelper.GetDisplayName((Language)_group.SourceLanguage) ↔ @LanguageHelper.GetDisplayName((Language)_group.TargetLanguage)
             </MudChip>
             <MudText Typo="Typo.caption" Class="ml-2">Autor: @_group.OwnerDisplayName</MudText>
         </MudItem>
@@ -54,10 +54,10 @@ else
                 <MudText Typo="Typo.h6" Class="mb-2">Nové slovíčko</MudText>
                 <MudGrid>
                     <MudItem xs="12" sm="4">
-                        <MudTextField @bind-Value="_newTerm" Label="@_group.SourceLanguage" Variant="Variant.Outlined" />
+                        <MudTextField @bind-Value="_newTerm" Label="@LanguageHelper.GetDisplayName((Language)_group.SourceLanguage)" Variant="Variant.Outlined" />
                     </MudItem>
                     <MudItem xs="12" sm="4">
-                        <MudTextField @bind-Value="_newDefinition" Label="@_group.TargetLanguage" Variant="Variant.Outlined" />
+                        <MudTextField @bind-Value="_newDefinition" Label="@LanguageHelper.GetDisplayName((Language)_group.TargetLanguage)" Variant="Variant.Outlined" />
                     </MudItem>
                     <MudItem xs="12" sm="4">
                         <MudTextField @bind-Value="_newNotes" Label="Poznámky" Variant="Variant.Outlined" />
@@ -73,8 +73,8 @@ else
 
     <MudTable Items="_words" Hover="true" Striped="true" Class="mt-4" Loading="_wordsLoading">
         <HeaderContent>
-            <MudTh>@_group.SourceLanguage</MudTh>
-            <MudTh>@_group.TargetLanguage</MudTh>
+            <MudTh>@LanguageHelper.GetDisplayName((Language)_group.SourceLanguage)</MudTh>
+            <MudTh>@LanguageHelper.GetDisplayName((Language)_group.TargetLanguage)</MudTh>
             <MudTh>Poznámky</MudTh>
             <MudTh>Akce</MudTh>
         </HeaderContent>

@@ -12,8 +12,8 @@ public record GroupDto(
     int Visibility,
     int WordCount,
     Guid DictionaryId,
-    string SourceLanguage,
-    string TargetLanguage,
+    int SourceLanguage,
+    int TargetLanguage,
     DateTime CreatedAt,
     DateTime UpdatedAt
 );
@@ -26,8 +26,8 @@ public record GroupListDto(
     int Visibility,
     int WordCount,
     Guid DictionaryId,
-    string SourceLanguage,
-    string TargetLanguage
+    int SourceLanguage,
+    int TargetLanguage
 );
 
 public record PublicGroupsRequest(string? Search, Guid? DictionaryId = null, int Page = 1, int PageSize = 20);

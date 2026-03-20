@@ -21,7 +21,7 @@ public class GroupService : IGroupService
             .Select(g => new GroupListDto(
                 g.Id, g.Name, g.Description,
                 g.Owner.DisplayName, (int)g.Visibility, g.Words.Count,
-                g.DictionaryId, g.Dictionary.SourceLanguage, g.Dictionary.TargetLanguage))
+                g.DictionaryId, (int)g.Dictionary.SourceLanguage, (int)g.Dictionary.TargetLanguage))
             .ToListAsync();
 
         var subscribed = await _db.GroupSubscriptions
@@ -29,7 +29,7 @@ public class GroupService : IGroupService
             .Select(s => new GroupListDto(
                 s.Group.Id, s.Group.Name, s.Group.Description,
                 s.Group.Owner.DisplayName, (int)s.Group.Visibility, s.Group.Words.Count,
-                s.Group.DictionaryId, s.Group.Dictionary.SourceLanguage, s.Group.Dictionary.TargetLanguage))
+                s.Group.DictionaryId, (int)s.Group.Dictionary.SourceLanguage, (int)s.Group.Dictionary.TargetLanguage))
             .ToListAsync();
 
         return [.. owned, .. subscribed];
@@ -56,7 +56,7 @@ public class GroupService : IGroupService
             group.Id, group.Name, group.Description,
             group.OwnerId, group.Owner.DisplayName,
             (int)group.Visibility, group.Words.Count,
-            group.DictionaryId, group.Dictionary.SourceLanguage, group.Dictionary.TargetLanguage,
+            group.DictionaryId, (int)group.Dictionary.SourceLanguage, (int)group.Dictionary.TargetLanguage,
             group.CreatedAt, group.UpdatedAt);
     }
 
@@ -87,7 +87,7 @@ public class GroupService : IGroupService
             group.Id, group.Name, group.Description,
             group.OwnerId, user.DisplayName,
             (int)group.Visibility, 0,
-            group.DictionaryId, dictionary.SourceLanguage, dictionary.TargetLanguage,
+            group.DictionaryId, (int)dictionary.SourceLanguage, (int)dictionary.TargetLanguage,
             group.CreatedAt, group.UpdatedAt);
     }
 
@@ -114,7 +114,7 @@ public class GroupService : IGroupService
             group.Id, group.Name, group.Description,
             group.OwnerId, group.Owner.DisplayName,
             (int)group.Visibility, group.Words.Count,
-            group.DictionaryId, group.Dictionary.SourceLanguage, group.Dictionary.TargetLanguage,
+            group.DictionaryId, (int)group.Dictionary.SourceLanguage, (int)group.Dictionary.TargetLanguage,
             group.CreatedAt, group.UpdatedAt);
     }
 
@@ -155,7 +155,7 @@ public class GroupService : IGroupService
             .Select(g => new GroupListDto(
                 g.Id, g.Name, g.Description,
                 g.Owner.DisplayName, (int)g.Visibility, g.Words.Count,
-                g.DictionaryId, g.Dictionary.SourceLanguage, g.Dictionary.TargetLanguage))
+                g.DictionaryId, (int)g.Dictionary.SourceLanguage, (int)g.Dictionary.TargetLanguage))
             .ToListAsync();
 
         return new PagedResult<GroupListDto>(items, totalCount, request.Page, request.PageSize);

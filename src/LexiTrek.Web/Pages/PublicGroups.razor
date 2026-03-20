@@ -33,7 +33,7 @@ else
                         <MudText Typo="Typo.body2">@group.WordCount slovíček</MudText>
                         <MudText Typo="Typo.caption">Autor: @group.OwnerDisplayName</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            @group.SourceLanguage ↔ @group.TargetLanguage
+                            @LanguageHelper.GetDisplayName((Language)group.SourceLanguage) ↔ @LanguageHelper.GetDisplayName((Language)group.TargetLanguage)
                         </MudText>
                         @if (!string.IsNullOrEmpty(group.Description))
                         {

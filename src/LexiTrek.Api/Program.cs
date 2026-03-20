@@ -36,8 +36,8 @@ using (var scope = app.Services.CreateScope())
         db.Dictionaries.Add(new Dictionary
         {
             Id = defaultDictionaryId,
-            SourceLanguage = "Čeština",
-            TargetLanguage = "Angličtina",
+            SourceLanguage = Language.CZ,
+            TargetLanguage = Language.EN,
             OwnerId = null,
             Visibility = Visibility.Public,
             CreatedAt = DateTime.UtcNow

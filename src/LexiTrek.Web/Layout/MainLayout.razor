@@ -20,7 +20,7 @@
                                Style="max-width: 280px; color: white;">
                         @foreach (var dict in DictState.Dictionaries)
                         {
-                            <MudSelectItem T="Guid?" Value="@((Guid?)dict.Id)">@dict.SourceLanguage ↔ @dict.TargetLanguage</MudSelectItem>
+                            <MudSelectItem T="Guid?" Value="@((Guid?)dict.Id)">@LanguageHelper.GetDisplayName((Language)dict.SourceLanguage) ↔ @LanguageHelper.GetDisplayName((Language)dict.TargetLanguage)</MudSelectItem>
                         }
                     </MudSelect>
                 }

@@ -15,10 +15,22 @@
         <MudText Typo="Typo.h6" Class="mb-2">Nový slovník</MudText>
         <MudGrid>
             <MudItem xs="12" sm="5">
-                <MudTextField @bind-Value="_sourceLanguage" Label="Zdrojový jazyk" Variant="Variant.Outlined" />
+                <MudSelect @bind-Value="_sourceLanguage" Label="Zdrojový jazyk" Variant="Variant.Outlined"
+                           ToStringFunc="@(l => l.HasValue ? LanguageHelper.GetLabel(l.Value) : "")">
+                    @foreach (var lang in Enum.GetValues<Language>())
+                    {
+                        <MudSelectItem T="Language?" Value="@((Language?)lang)">@LanguageHelper.GetLabel(lang)</MudSelectItem>
+                    }
+                </MudSelect>
             </MudItem>
             <MudItem xs="12" sm="5">
-                <MudTextField @bind-Value="_targetLanguage" Label="Cílový jazyk" Variant="Variant.Outlined" />
+                <MudSelect @bind-Value="_targetLanguage" Label="Cílový jazyk" Variant="Variant.Outlined"
+                           ToStringFunc="@(l => l.HasValue ? LanguageHelper.GetLabel(l.Value) : "")">
+                    @foreach (var lang in Enum.GetValues<Language>())
+                    {
+                        <MudSelectItem T="Language?" Value="@((Language?)lang)">@LanguageHelper.GetLabel(lang)</MudSelectItem>
+                    }
+                </MudSelect>
             </MudItem>
             <MudItem xs="12" sm="2" Class="d-flex align-end">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreate"
@@ -45,7 +57,7 @@ else
                 <MudCard>
                     <MudCardContent>
                         <div class="d-flex justify-space-between align-center">
-                            <MudText Typo="Typo.h6">@dict.SourceLanguage <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small" /> @dict.TargetLanguage</MudText>
+                            <MudText Typo="Typo.h6">@LanguageHelper.GetDisplayName((Language)dict.SourceLanguage) <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small" /> @LanguageHelper.GetDisplayName((Language)dict.TargetLanguage)</MudText>
                             <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
                                            OnClick="@(() => HandleDelete(dict.Id))" />
                         </div>
@@ -59,8 +71,8 @@ else
 @code {
     private bool _loading = true;
     private bool _creating;
-    private string _sourceLanguage = "";
-    private string _targetLanguage = "";
+    private Language? _sourceLanguage;
+    private Language? _targetLanguage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -70,16 +82,16 @@ else
 
     private async Task HandleCreate()
     {
-        if (string.IsNullOrWhiteSpace(_sourceLanguage) || string.IsNullOrWhiteSpace(_targetLanguage)) return;
+        if (_sourceLanguage == null || _targetLanguage == null) return;
 
         _creating = true;
         var result = await DictionaryService.CreateDictionaryAsync(
-            new CreateDictionaryDto(_sourceLanguage, _targetLanguage));
+            new CreateDictionaryDto((int)_sourceLanguage.Value, (int)_targetLanguage.Value));
 
         if (result != null)
         {
-            _sourceLanguage = "";
-            _targetLanguage = "";
+            _sourceLanguage = null;
+            _targetLanguage = null;
             await DictState.LoadAsync();
             Snackbar.Add("Slovník vytvořen!", Severity.Success);
         }

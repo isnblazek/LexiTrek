@@ -17,7 +17,7 @@ public class DictionaryService : IDictionaryService
     {
         return await _db.Dictionaries
             .Where(d => d.OwnerId == null || d.OwnerId == userId || d.Visibility == Visibility.Public)
-            .Select(d => new DictionaryListDto(d.Id, d.SourceLanguage, d.TargetLanguage))
+            .Select(d => new DictionaryListDto(d.Id, (int)d.SourceLanguage, (int)d.TargetLanguage))
             .ToListAsync();
     }
 
@@ -26,7 +26,7 @@ public class DictionaryService : IDictionaryService
         var d = await _db.Dictionaries.FindAsync(id)
             ?? throw new KeyNotFoundException("Dictionary not found");
 
-        return new DictionaryDto(d.Id, d.SourceLanguage, d.TargetLanguage, d.OwnerId, (int)d.Visibility, d.CreatedAt);
+        return new DictionaryDto(d.Id, (int)d.SourceLanguage, (int)d.TargetLanguage, d.OwnerId, (int)d.Visibility, d.CreatedAt);
     }
 
     public async Task<DictionaryDto> CreateDictionaryAsync(CreateDictionaryDto dto, string userId)
@@ -34,8 +34,8 @@ public class DictionaryService : IDictionaryService
         var dictionary = new Dictionary
         {
             Id = Guid.NewGuid(),
-            SourceLanguage = dto.SourceLanguage,
-            TargetLanguage = dto.TargetLanguage,
+            SourceLanguage = (Language)dto.SourceLanguage,
+            TargetLanguage = (Language)dto.TargetLanguage,
             OwnerId = userId,
             Visibility = Visibility.Private,
             CreatedAt = DateTime.UtcNow
@@ -45,7 +45,7 @@ public class DictionaryService : IDictionaryService
         await _db.SaveChangesAsync();
 
         return new DictionaryDto(
-            dictionary.Id, dictionary.SourceLanguage, dictionary.TargetLanguage,
+            dictionary.Id, (int)dictionary.SourceLanguage, (int)dictionary.TargetLanguage,
             dictionary.OwnerId, (int)dictionary.Visibility, dictionary.CreatedAt);
     }
 

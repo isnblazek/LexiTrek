@@ -9,8 +9,8 @@ public class DictionaryConfiguration : IEntityTypeConfiguration<Dictionary>
     public void Configure(EntityTypeBuilder<Dictionary> builder)
     {
         builder.HasKey(d => d.Id);
-        builder.Property(d => d.SourceLanguage).HasMaxLength(100).IsRequired();
-        builder.Property(d => d.TargetLanguage).HasMaxLength(100).IsRequired();
+        builder.Property(d => d.SourceLanguage).IsRequired();
+        builder.Property(d => d.TargetLanguage).IsRequired();
 
         builder.HasOne(d => d.Owner)
             .WithMany(u => u.Dictionaries)

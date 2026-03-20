@@ -1,11 +1,11 @@
 namespace LexiTrek.Shared.DTOs;
 
-public record CreateDictionaryDto(string SourceLanguage, string TargetLanguage);
+public record CreateDictionaryDto(int SourceLanguage, int TargetLanguage);
 
 public record DictionaryDto(
     Guid Id,
-    string SourceLanguage,
-    string TargetLanguage,
+    int SourceLanguage,
+    int TargetLanguage,
     string? OwnerId,
     int Visibility,
     DateTime CreatedAt
@@ -13,6 +13,6 @@ public record DictionaryDto(
 
 public record DictionaryListDto(
     Guid Id,
-    string SourceLanguage,
-    string TargetLanguage
+    int SourceLanguage,
+    int TargetLanguage
 );

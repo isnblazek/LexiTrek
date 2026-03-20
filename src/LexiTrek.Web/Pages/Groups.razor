@@ -38,7 +38,7 @@ else
                             @(group.Visibility == 1 ? "Veřejná" : "Soukromá")
                         </MudChip>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            @group.SourceLanguage ↔ @group.TargetLanguage
+                            @LanguageHelper.GetDisplayName((Language)group.SourceLanguage) ↔ @LanguageHelper.GetDisplayName((Language)group.TargetLanguage)
                         </MudText>
                         @if (!string.IsNullOrEmpty(group.Description))
                         {
