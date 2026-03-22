@@ -64,19 +64,29 @@
 
 @code {
     private bool _drawerOpen = true;
+    private bool _loaded;
 
     [CascadingParameter]
     private Task<AuthenticationState>? AuthState { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         DictState.OnChange += StateHasChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
         if (AuthState != null)
         {
             var state = await AuthState;
-            if (state.User.Identity?.IsAuthenticated == true)
+            if (state.User.Identity?.IsAuthenticated == true && !_loaded)
             {
+                _loaded = true;
                 await DictState.LoadAsync();
+            }
+            else if (state.User.Identity?.IsAuthenticated != true)
+            {
+                _loaded = false;
             }
         }
     }

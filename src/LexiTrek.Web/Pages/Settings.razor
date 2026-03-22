@@ -16,7 +16,8 @@
         <MudText Typo="Typo.h6" Class="mb-2">Nový slovník</MudText>
         <MudGrid>
             <MudItem xs="12" sm="5">
-                <MudSelect @bind-Value="_sourceLangId" Label="Zdrojový jazyk" Variant="Variant.Outlined"
+                <MudSelect Value="_sourceLangId" ValueChanged="OnSourceLangChanged" T="int"
+                           Label="Zdrojový jazyk" Variant="Variant.Outlined"
                            ToStringFunc="@(id => _languages.FirstOrDefault(l => l.Id == id)?.Name ?? "")">
                     @foreach (var lang in _languages)
                     {
@@ -27,7 +28,7 @@
             <MudItem xs="12" sm="5">
                 <MudSelect @bind-Value="_targetLangId" Label="Cílový jazyk" Variant="Variant.Outlined"
                            ToStringFunc="@(id => _languages.FirstOrDefault(l => l.Id == id)?.Name ?? "")">
-                    @foreach (var lang in _languages)
+                    @foreach (var lang in _languages.Where(l => l.Id != _sourceLangId))
                     {
                         <MudSelectItem Value="lang.Id">@lang.Code – @lang.Name</MudSelectItem>
                     }
@@ -81,6 +82,13 @@ else
         _languages = await LanguageService.GetLanguagesAsync();
         await DictState.LoadAsync();
         _loading = false;
+    }
+
+    private void OnSourceLangChanged(int newValue)
+    {
+        _sourceLangId = newValue;
+        if (_targetLangId == _sourceLangId)
+            _targetLangId = 0;
     }
 
     private async Task HandleCreate()

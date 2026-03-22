@@ -160,6 +160,10 @@ dotnet watch run --project src/LexiTrek.Api --launch-profile http
 - Refresh tokeny uloženy jako shadow properties na `AppUser` (EF Core)
 - **Klient (WASM):** `TokenStorageService` ukládá tokeny do `localStorage`, `JwtAuthStateProvider` parsuje JWT claims, `AuthHeaderHandler` přidává Bearer header
 
+## Git
+
+- **NIKDY nepřidávat `Co-Authored-By: Claude` ani žádnou zmínku o Claude jako autora/spoluautora do commit messages.** Autor commitů je vždy uživatel.
+
 ## Klíčové konvence
 
 - **.NET 10**, C# latest, nullable enabled, implicit usings
