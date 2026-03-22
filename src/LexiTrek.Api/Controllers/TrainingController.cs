@@ -19,24 +19,12 @@ public class TrainingController : ControllerBase
 
     [HttpGet("words")]
     public async Task<ActionResult<List<TrainingWordDto>>> GetTrainingWords(
-        [FromQuery] Guid? groupId, [FromQuery] Guid? tagId, [FromQuery] int count = 20)
+        [FromQuery] long? groupId, [FromQuery] long? tagId, [FromQuery] int count = 20)
     {
-        try
-        {
-            return Ok(await _trainingService.GetTrainingWordsAsync(groupId, tagId, count, UserId));
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        try { return Ok(await _trainingService.GetTrainingWordsAsync(groupId, tagId, count, UserId)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
     [HttpPost("sessions")]
@@ -46,24 +34,12 @@ public class TrainingController : ControllerBase
         return Created($"api/training/sessions/{result.Id}", result);
     }
 
-    [HttpPut("sessions/{id:guid}/complete")]
-    public async Task<ActionResult<SessionResultsDto>> CompleteSession(Guid id, CompleteSessionDto dto)
+    [HttpPut("sessions/{id:long}/complete")]
+    public async Task<ActionResult<SessionResultsDto>> CompleteSession(long id, CompleteSessionDto dto)
     {
-        try
-        {
-            return Ok(await _trainingService.CompleteSessionAsync(id, dto, UserId));
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        try { return Ok(await _trainingService.CompleteSessionAsync(id, dto, UserId)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
     }
 }

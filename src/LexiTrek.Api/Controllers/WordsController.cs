@@ -16,73 +16,48 @@ public class WordsController : ControllerBase
 
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-    [HttpGet("api/groups/{groupId:guid}/words")]
-    public async Task<ActionResult<List<WordDto>>> GetWords(Guid groupId)
+    [HttpGet("api/dictionaries/{dictionaryId:long}/entries")]
+    public async Task<ActionResult<List<DictionaryEntryDto>>> GetEntries(long dictionaryId)
     {
-        try
-        {
-            return Ok(await _wordService.GetWordsAsync(groupId, UserId));
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        try { return Ok(await _wordService.GetEntriesAsync(dictionaryId, UserId)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
-    [HttpPost("api/groups/{groupId:guid}/words")]
-    public async Task<ActionResult<WordDto>> CreateWord(Guid groupId, CreateWordDto dto)
+    [HttpGet("api/groups/{groupId:long}/entries")]
+    public async Task<ActionResult<List<DictionaryEntryDto>>> GetEntriesByGroup(long groupId)
     {
-        try
-        {
-            var result = await _wordService.CreateWordAsync(groupId, dto, UserId);
-            return Created($"api/words/{result.Id}", result);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        try { return Ok(await _wordService.GetEntriesByGroupAsync(groupId, UserId)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
-    [HttpPut("api/words/{id:guid}")]
-    public async Task<ActionResult<WordDto>> UpdateWord(Guid id, UpdateWordDto dto)
+    [HttpPost("api/dictionaries/{dictionaryId:long}/entries")]
+    public async Task<ActionResult<DictionaryEntryDto>> AddEntry(long dictionaryId, CreateEntryDto dto, [FromQuery] long? groupId = null)
     {
         try
         {
-            return Ok(await _wordService.UpdateWordAsync(id, dto, UserId));
+            var result = await _wordService.AddEntryAsync(dictionaryId, dto, UserId, groupId);
+            return Created($"api/entries/{result.Id}", result);
         }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
-    [HttpDelete("api/words/{id:guid}")]
-    public async Task<ActionResult> DeleteWord(Guid id)
+    [HttpPut("api/entries/{id:long}")]
+    public async Task<ActionResult<DictionaryEntryDto>> UpdateEntry(long id, UpdateEntryDto dto)
     {
-        try
-        {
-            await _wordService.DeleteWordAsync(id, UserId);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        try { return Ok(await _wordService.UpdateEntryAsync(id, dto, UserId)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+    }
+
+    [HttpDelete("api/entries/{id:long}")]
+    public async Task<ActionResult> RemoveEntry(long id)
+    {
+        try { await _wordService.RemoveEntryAsync(id, UserId); return NoContent(); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 }

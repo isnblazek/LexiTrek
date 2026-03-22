@@ -1,4 +1,4 @@
-@page "/training/{SessionId:guid}/results"
+@page "/training/{SessionId:long}/results"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject NavigationManager Navigation
 
@@ -43,7 +43,7 @@
 </MudContainer>
 
 @code {
-    [Parameter] public Guid SessionId { get; set; }
+    [Parameter] public long SessionId { get; set; }
 
     [SupplyParameterFromQuery(Name = "red")]
     public int _redCount { get; set; }

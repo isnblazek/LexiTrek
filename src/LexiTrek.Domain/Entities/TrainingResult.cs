@@ -4,12 +4,12 @@ namespace LexiTrek.Domain.Entities;
 
 public class TrainingResult
 {
-    public Guid Id { get; set; }
-    public Guid SessionId { get; set; }
-    public Guid WordId { get; set; }
+    public long Id { get; set; }
+    public long SessionId { get; set; }
+    public long WordPairId { get; set; }
     public TrainingResultType Result { get; set; }
     public DateTime AnsweredAt { get; set; }
 
     public TrainingSession Session { get; set; } = null!;
-    public Word Word { get; set; } = null!;
+    public WordPair WordPair { get; set; } = null!;
 }

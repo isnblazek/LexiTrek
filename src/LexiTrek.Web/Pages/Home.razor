@@ -8,7 +8,6 @@
 
 <AuthorizeView>
     <Authorized>
-        @* ── Dashboard pro přihlášeného uživatele ── *@
         <MudText Typo="Typo.h4" Class="mb-2">Vítejte zpět!</MudText>
         <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-6">Zde je přehled vašeho učení.</MudText>
 
@@ -22,7 +21,7 @@
                             </MudAvatar>
                             <div>
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">Moje skupiny</MudText>
-                                <MudText Typo="Typo.h4">@FilteredGroups.Count()</MudText>
+                                <MudText Typo="Typo.h4">@_groups.Count</MudText>
                             </div>
                         </div>
                     </MudCardContent>
@@ -41,7 +40,7 @@
                             </MudAvatar>
                             <div>
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">Celkem slovíček</MudText>
-                                <MudText Typo="Typo.h4">@FilteredGroups.Sum(g => g.WordCount)</MudText>
+                                <MudText Typo="Typo.h4">@_groups.Sum(g => g.EntryCount)</MudText>
                             </div>
                         </div>
                     </MudCardContent>
@@ -68,30 +67,18 @@
             </MudItem>
         </MudGrid>
 
-        @if (FilteredGroups.Any())
+        @if (_groups.Any())
         {
             <MudText Typo="Typo.h5" Class="mt-8 mb-4">Vaše skupiny</MudText>
             <MudGrid Spacing="3">
-                @foreach (var group in FilteredGroups.Take(6))
+                @foreach (var group in _groups.Take(6))
                 {
                     <MudItem xs="12" sm="6" md="4">
                         <MudCard Class="group-card cursor-pointer" @onclick="@(() => Navigation.NavigateTo($"/groups/{group.Id}"))">
                             <MudCardContent>
-                                <div class="d-flex justify-space-between align-center mb-2">
-                                    <MudText Typo="Typo.h6">@group.Name</MudText>
-                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
-                                             Color="@(group.Visibility == 1 ? Color.Success : Color.Default)">
-                                        @(group.Visibility == 1 ? "Veřejná" : "Soukromá")
-                                    </MudChip>
-                                </div>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                    <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Class="mr-1" Style="vertical-align: middle;" />
-                                    @group.WordCount slovíček
-                                </MudText>
-                                @if (!string.IsNullOrEmpty(group.Description))
-                                {
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">@group.Description</MudText>
-                                }
+                                <MudText Typo="Typo.h6">@group.Name</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@group.EntryCount slovíček</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@group.SourceLangName ↔ @group.TargetLangName</MudText>
                             </MudCardContent>
                         </MudCard>
                     </MudItem>
@@ -103,184 +90,27 @@
             <MudPaper Class="pa-8 mt-8 text-center" Elevation="0" Style="background: #EEF2FF; border-radius: 16px;">
                 <MudIcon Icon="@Icons.Material.Filled.RocketLaunch" Size="Size.Large" Color="Color.Primary" Class="mb-3" />
                 <MudText Typo="Typo.h6" Class="mb-2">Začněte učení!</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                    Vytvořte si svou první skupinu slovíček a začněte trénovat.
-                </MudText>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/groups/create"
-                           StartIcon="@Icons.Material.Filled.Add">Vytvořit skupinu</MudButton>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Vytvořte si svou první skupinu slovíček a začněte trénovat.</MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/groups/create" StartIcon="@Icons.Material.Filled.Add">Vytvořit skupinu</MudButton>
             </MudPaper>
         }
     </Authorized>
-
     <NotAuthorized>
-        @* ── Landing page pro nepřihlášeného ── *@
         <div class="landing-hero">
             <div class="landing-content">
-                @* ── Navbar ── *@
                 <MudContainer MaxWidth="MaxWidth.Large">
                     <div class="d-flex align-center justify-space-between py-4">
                         <MudText Typo="Typo.h5" Style="color: white; font-weight: 800;">LexiTrek</MudText>
                         <div>
-                            <MudButton Variant="Variant.Text" Style="color: rgba(255,255,255,0.85);"
-                                       Href="/login">Přihlásit se</MudButton>
-                            <MudButton Variant="Variant.Filled" Style="background: white; color: #4F46E5; font-weight: 600;"
-                                       Class="ml-2" Href="/register">Registrace zdarma</MudButton>
+                            <MudButton Variant="Variant.Text" Style="color: rgba(255,255,255,0.85);" Href="/login">Přihlásit se</MudButton>
+                            <MudButton Variant="Variant.Filled" Style="background: white; color: #4F46E5; font-weight: 600;" Class="ml-2" Href="/register">Registrace zdarma</MudButton>
                         </div>
                     </div>
                 </MudContainer>
-
-                @* ── Hero ── *@
                 <MudContainer MaxWidth="MaxWidth.Medium" Class="py-16 text-center">
-                    <MudText Typo="Typo.h2" Style="color: white; font-weight: 800; line-height: 1.2;" Class="mb-4">
-                        Učte se slovíčka<br />chytře a efektivně
-                    </MudText>
-                    <MudText Typo="Typo.h6" Style="color: rgba(255,255,255,0.8); font-weight: 400; max-width: 540px; margin: 0 auto;" Class="mb-8">
-                        LexiTrek využívá metodu spaced repetition, abyste si zapamatovali více slovíček za kratší dobu.
-                    </MudText>
-                    <div class="d-flex justify-center gap-3">
-                        <MudButton Variant="Variant.Filled" Size="Size.Large"
-                                   Style="background: white; color: #4F46E5; font-weight: 700; padding: 12px 32px;"
-                                   Href="/register" StartIcon="@Icons.Material.Filled.ArrowForward">
-                            Začít zdarma
-                        </MudButton>
-                        <MudButton Variant="Variant.Outlined" Size="Size.Large"
-                                   Style="color: white; border-color: rgba(255,255,255,0.4); padding: 12px 32px;"
-                                   Href="#features">
-                            Zjistit více
-                        </MudButton>
-                    </div>
-                </MudContainer>
-
-                @* ── Stats ── *@
-                <MudContainer MaxWidth="MaxWidth.Medium" Class="pb-12">
-                    <MudGrid Justify="Justify.Center" Spacing="6">
-                        <MudItem xs="4">
-                            <div class="text-center">
-                                <MudText Class="stat-number" Style="color: white;">3</MudText>
-                                <MudText Style="color: rgba(255,255,255,0.7);">úrovně hodnocení</MudText>
-                            </div>
-                        </MudItem>
-                        <MudItem xs="4">
-                            <div class="text-center">
-                                <MudText Class="stat-number" Style="color: white;">SM-2</MudText>
-                                <MudText Style="color: rgba(255,255,255,0.7);">spaced repetition</MudText>
-                            </div>
-                        </MudItem>
-                        <MudItem xs="4">
-                            <div class="text-center">
-                                <MudText Class="stat-number" Style="color: white;">N</MudText>
-                                <MudText Style="color: rgba(255,255,255,0.7);">jazykových párů</MudText>
-                            </div>
-                        </MudItem>
-                    </MudGrid>
-                </MudContainer>
-
-                @* ── Features ── *@
-                <MudContainer MaxWidth="MaxWidth.Large" Class="pb-16" id="features">
-                    <MudText Typo="Typo.h4" Align="Align.Center" Style="color: white; font-weight: 700;" Class="mb-2">
-                        Proč LexiTrek?
-                    </MudText>
-                    <MudText Align="Align.Center" Style="color: rgba(255,255,255,0.7);" Class="mb-8">
-                        Vše co potřebujete pro efektivní učení slovíček na jednom místě.
-                    </MudText>
-
-                    <MudGrid Spacing="4">
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudCard Class="feature-card pa-6" Elevation="0">
-                                <div class="feature-icon" style="background: rgba(99,102,241,0.3);">
-                                    <MudIcon Icon="@Icons.Material.Filled.Psychology" Style="color: #C7D2FE;" />
-                                </div>
-                                <MudText Typo="Typo.h6" Style="color: white;" Class="mb-2">Spaced Repetition</MudText>
-                                <MudText Style="color: rgba(255,255,255,0.7);">
-                                    Algoritmus SM-2 vám zobrazí slovíčka přesně ve chvíli, kdy je potřebujete zopakovat.
-                                </MudText>
-                            </MudCard>
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudCard Class="feature-card pa-6" Elevation="0">
-                                <div class="feature-icon" style="background: rgba(16,185,129,0.3);">
-                                    <MudIcon Icon="@Icons.Material.Filled.Share" Style="color: #A7F3D0;" />
-                                </div>
-                                <MudText Typo="Typo.h6" Style="color: white;" Class="mb-2">Sdílení skupin</MudText>
-                                <MudText Style="color: rgba(255,255,255,0.7);">
-                                    Vytvářejte veřejné skupiny slovíček a sdílejte je s ostatními studenty.
-                                </MudText>
-                            </MudCard>
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudCard Class="feature-card pa-6" Elevation="0">
-                                <div class="feature-icon" style="background: rgba(245,158,11,0.3);">
-                                    <MudIcon Icon="@Icons.Material.Filled.Style" Style="color: #FDE68A;" />
-                                </div>
-                                <MudText Typo="Typo.h6" Style="color: white;" Class="mb-2">Kartičkový systém</MudText>
-                                <MudText Style="color: rgba(255,255,255,0.7);">
-                                    Otočte kartičku, ohodnoťte svou znalost a sledujte svůj pokrok v čase.
-                                </MudText>
-                            </MudCard>
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudCard Class="feature-card pa-6" Elevation="0">
-                                <div class="feature-icon" style="background: rgba(239,68,68,0.3);">
-                                    <MudIcon Icon="@Icons.Material.Filled.Label" Style="color: #FCA5A5;" />
-                                </div>
-                                <MudText Typo="Typo.h6" Style="color: white;" Class="mb-2">Tagy místo složek</MudText>
-                                <MudText Style="color: rgba(255,255,255,0.7);">
-                                    Organizujte slovíčka pomocí tagů. Flexibilnější než rigidní hierarchie kategorií.
-                                </MudText>
-                            </MudCard>
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudCard Class="feature-card pa-6" Elevation="0">
-                                <div class="feature-icon" style="background: rgba(59,130,246,0.3);">
-                                    <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Style="color: #93C5FD;" />
-                                </div>
-                                <MudText Typo="Typo.h6" Style="color: white;" Class="mb-2">Chytrý výběr slov</MudText>
-                                <MudText Style="color: rgba(255,255,255,0.7);">
-                                    Nová slovíčka mají prioritu, naučená se vrací v optimální interval pro trvalé zapamatování.
-                                </MudText>
-                            </MudCard>
-                        </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudCard Class="feature-card pa-6" Elevation="0">
-                                <div class="feature-icon" style="background: rgba(168,85,247,0.3);">
-                                    <MudIcon Icon="@Icons.Material.Filled.Devices" Style="color: #D8B4FE;" />
-                                </div>
-                                <MudText Typo="Typo.h6" Style="color: white;" Class="mb-2">Odkudkoliv</MudText>
-                                <MudText Style="color: rgba(255,255,255,0.7);">
-                                    Webová aplikace funguje na počítači i mobilu. Učte se kdekoliv a kdykoliv.
-                                </MudText>
-                            </MudCard>
-                        </MudItem>
-                    </MudGrid>
-                </MudContainer>
-
-                @* ── CTA ── *@
-                <div style="background: rgba(0,0,0,0.15); padding: 64px 0;">
-                    <MudContainer MaxWidth="MaxWidth.Small" Class="text-center">
-                        <MudText Typo="Typo.h4" Style="color: white; font-weight: 700;" Class="mb-3">
-                            Připraveni začít?
-                        </MudText>
-                        <MudText Style="color: rgba(255,255,255,0.8);" Class="mb-6">
-                            Zaregistrujte se zdarma a začněte se učit slovíčka ještě dnes.
-                        </MudText>
-                        <MudButton Variant="Variant.Filled" Size="Size.Large"
-                                   Style="background: white; color: #4F46E5; font-weight: 700; padding: 14px 40px;"
-                                   Href="/register" StartIcon="@Icons.Material.Filled.PersonAdd">
-                            Vytvořit účet zdarma
-                        </MudButton>
-                    </MudContainer>
-                </div>
-
-                @* ── Footer ── *@
-                <MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
-                    <div class="d-flex justify-space-between align-center">
-                        <MudText Style="color: rgba(255,255,255,0.5); font-size: 0.875rem;">
-                            LexiTrek &copy; 2026
-                        </MudText>
-                        <MudText Style="color: rgba(255,255,255,0.5); font-size: 0.875rem;">
-                            Vytvořeno s MudBlazor + .NET 10
-                        </MudText>
-                    </div>
+                    <MudText Typo="Typo.h2" Style="color: white; font-weight: 800; line-height: 1.2;" Class="mb-4">Učte se slovíčka<br />chytře a efektivně</MudText>
+                    <MudText Typo="Typo.h6" Style="color: rgba(255,255,255,0.8); font-weight: 400; max-width: 540px; margin: 0 auto;" Class="mb-8">LexiTrek využívá metodu spaced repetition, abyste si zapamatovali více slovíček za kratší dobu.</MudText>
+                    <MudButton Variant="Variant.Filled" Size="Size.Large" Style="background: white; color: #4F46E5; font-weight: 700; padding: 12px 32px;" Href="/register" StartIcon="@Icons.Material.Filled.ArrowForward">Začít zdarma</MudButton>
                 </MudContainer>
             </div>
         </div>
@@ -289,11 +119,6 @@
 
 @code {
     private List<GroupListDto> _groups = [];
-
-    private IEnumerable<GroupListDto> FilteredGroups =>
-        DictState.SelectedDictionaryId.HasValue
-            ? _groups.Where(g => g.DictionaryId == DictState.SelectedDictionaryId.Value)
-            : _groups;
 
     [CascadingParameter]
     private Task<AuthenticationState>? AuthState { get; set; }
@@ -305,13 +130,10 @@
         {
             var state = await AuthState;
             if (state.User.Identity?.IsAuthenticated == true)
-            {
                 _groups = await GroupService.GetUserGroupsAsync();
-            }
         }
     }
 
     private void OnDictionaryChanged() => InvokeAsync(StateHasChanged);
-
     public void Dispose() => DictState.OnChange -= OnDictionaryChanged;
 }

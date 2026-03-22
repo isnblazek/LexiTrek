@@ -12,18 +12,15 @@ public class DictionaryApiService
     public async Task<List<DictionaryListDto>> GetDictionariesAsync()
         => await _http.GetFromJsonAsync<List<DictionaryListDto>>("api/dictionaries") ?? [];
 
-    public async Task<DictionaryDto?> GetDictionaryAsync(Guid id)
-        => await _http.GetFromJsonAsync<DictionaryDto>($"api/dictionaries/{id}");
-
-    public async Task<DictionaryDto?> CreateDictionaryAsync(CreateDictionaryDto dto)
+    public async Task<DictionaryListDto?> CreateDictionaryAsync(CreateDictionaryDto dto)
     {
         var response = await _http.PostAsJsonAsync("api/dictionaries", dto);
         return response.IsSuccessStatusCode
-            ? await response.Content.ReadFromJsonAsync<DictionaryDto>()
+            ? await response.Content.ReadFromJsonAsync<DictionaryListDto>()
             : null;
     }
 
-    public async Task<bool> DeleteDictionaryAsync(Guid id)
+    public async Task<bool> DeleteDictionaryAsync(long id)
     {
         var response = await _http.DeleteAsync($"api/dictionaries/{id}");
         return response.IsSuccessStatusCode;

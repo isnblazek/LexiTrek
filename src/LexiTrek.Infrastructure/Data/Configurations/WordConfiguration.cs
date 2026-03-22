@@ -9,15 +9,14 @@ public class WordConfiguration : IEntityTypeConfiguration<Word>
     public void Configure(EntityTypeBuilder<Word> builder)
     {
         builder.HasKey(w => w.Id);
-        builder.Property(w => w.Term).HasMaxLength(500).IsRequired();
-        builder.Property(w => w.Definition).HasMaxLength(500).IsRequired();
-        builder.Property(w => w.Notes).HasMaxLength(1000);
+        builder.Property(w => w.Id).UseIdentityAlwaysColumn();
+        builder.Property(w => w.Text).HasMaxLength(500).IsRequired();
 
-        builder.HasOne(w => w.Group)
-            .WithMany(g => g.Words)
-            .HasForeignKey(w => w.GroupId)
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(w => w.Language)
+            .WithMany()
+            .HasForeignKey(w => w.LanguageId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(w => w.GroupId);
+        builder.HasIndex(w => new { w.Text, w.LanguageId }).IsUnique();
     }
 }

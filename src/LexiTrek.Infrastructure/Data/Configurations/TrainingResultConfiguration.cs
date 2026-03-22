@@ -9,16 +9,17 @@ public class TrainingResultConfiguration : IEntityTypeConfiguration<TrainingResu
     public void Configure(EntityTypeBuilder<TrainingResult> builder)
     {
         builder.HasKey(r => r.Id);
+        builder.Property(r => r.Id).UseIdentityAlwaysColumn();
 
         builder.HasOne(r => r.Session)
             .WithMany(s => s.Results)
             .HasForeignKey(r => r.SessionId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(r => r.Word)
+        builder.HasOne(r => r.WordPair)
             .WithMany()
-            .HasForeignKey(r => r.WordId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey(r => r.WordPairId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(r => r.SessionId);
     }

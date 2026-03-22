@@ -23,45 +23,23 @@ public class DictionariesController : ControllerBase
         return Ok(await _dictionaryService.GetDictionariesAsync(UserId));
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<DictionaryDto>> GetDictionary(Guid id)
-    {
-        try
-        {
-            return Ok(await _dictionaryService.GetDictionaryAsync(id));
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-    }
-
     [HttpPost]
-    public async Task<ActionResult<DictionaryDto>> CreateDictionary(CreateDictionaryDto dto)
+    public async Task<ActionResult<DictionaryListDto>> CreateDictionary(CreateDictionaryDto dto)
     {
         var result = await _dictionaryService.CreateDictionaryAsync(dto, UserId);
-        return CreatedAtAction(nameof(GetDictionary), new { id = result.Id }, result);
+        return Created($"api/dictionaries/{result.Id}", result);
     }
 
-    [HttpDelete("{id:guid}")]
-    public async Task<ActionResult> DeleteDictionary(Guid id)
+    [HttpDelete("{id:long}")]
+    public async Task<ActionResult> DeleteDictionary(long id)
     {
         try
         {
             await _dictionaryService.DeleteDictionaryAsync(id, UserId);
             return NoContent();
         }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
     }
 }

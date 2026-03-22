@@ -15,34 +15,30 @@ public class TagApiService
     public async Task<TagDto?> CreateTagAsync(CreateTagDto dto)
     {
         var response = await _http.PostAsJsonAsync("api/tags", dto);
-        return response.IsSuccessStatusCode
-            ? await response.Content.ReadFromJsonAsync<TagDto>()
-            : null;
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<TagDto>() : null;
     }
 
-    public async Task<TagDto?> UpdateTagAsync(Guid id, UpdateTagDto dto)
+    public async Task<TagDto?> UpdateTagAsync(long id, UpdateTagDto dto)
     {
         var response = await _http.PutAsJsonAsync($"api/tags/{id}", dto);
-        return response.IsSuccessStatusCode
-            ? await response.Content.ReadFromJsonAsync<TagDto>()
-            : null;
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<TagDto>() : null;
     }
 
-    public async Task<bool> DeleteTagAsync(Guid id)
+    public async Task<bool> DeleteTagAsync(long id)
     {
         var response = await _http.DeleteAsync($"api/tags/{id}");
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<bool> AssignTagsAsync(Guid wordId, AssignTagsDto dto)
+    public async Task<bool> AssignTagsAsync(long entryId, AssignTagsDto dto)
     {
-        var response = await _http.PostAsJsonAsync($"api/words/{wordId}/tags", dto);
+        var response = await _http.PostAsJsonAsync($"api/entries/{entryId}/tags", dto);
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<bool> RemoveTagAsync(Guid wordId, Guid tagId)
+    public async Task<bool> RemoveTagAsync(long entryId, long tagId)
     {
-        var response = await _http.DeleteAsync($"api/words/{wordId}/tags/{tagId}");
+        var response = await _http.DeleteAsync($"api/entries/{entryId}/tags/{tagId}");
         return response.IsSuccessStatusCode;
     }
 }

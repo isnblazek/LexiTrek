@@ -1,15 +1,14 @@
 namespace LexiTrek.Shared.DTOs;
 
-public record CreateWordDto(string Term, string Definition, string? Notes);
-public record UpdateWordDto(string Term, string Definition, string? Notes);
+public record CreateEntryDto(string SourceText, string TargetText, string? Notes);
+public record UpdateEntryDto(string SourceText, string TargetText, string? Notes);
 
-public record WordDto(
-    Guid Id,
-    Guid GroupId,
-    string Term,
-    string Definition,
+public record DictionaryEntryDto(
+    long Id,
+    long WordPairId,
+    string SourceText,
+    string TargetText,
     string? Notes,
-    List<TagDto> Tags,
-    DateTime CreatedAt,
-    DateTime UpdatedAt
+    bool IsActive,
+    List<TagDto> Tags
 );

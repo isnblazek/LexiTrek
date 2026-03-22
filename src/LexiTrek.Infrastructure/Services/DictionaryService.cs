@@ -1,6 +1,5 @@
 using LexiTrek.Application.Interfaces;
 using LexiTrek.Domain.Entities;
-using LexiTrek.Domain.Enums;
 using LexiTrek.Infrastructure.Data;
 using LexiTrek.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -16,53 +15,47 @@ public class DictionaryService : IDictionaryService
     public async Task<List<DictionaryListDto>> GetDictionariesAsync(string userId)
     {
         return await _db.Dictionaries
-            .Where(d => d.OwnerId == null || d.OwnerId == userId || d.Visibility == Visibility.Public)
-            .Select(d => new DictionaryListDto(d.Id, (int)d.SourceLanguage, (int)d.TargetLanguage))
+            .Where(d => d.UserId == userId)
+            .Include(d => d.SourceLang)
+            .Include(d => d.TargetLang)
+            .Select(d => new DictionaryListDto(
+                d.Id, d.SourceLangId, d.TargetLangId,
+                d.SourceLang.Name, d.TargetLang.Name))
             .ToListAsync();
     }
 
-    public async Task<DictionaryDto> GetDictionaryAsync(Guid id)
-    {
-        var d = await _db.Dictionaries.FindAsync(id)
-            ?? throw new KeyNotFoundException("Dictionary not found");
-
-        return new DictionaryDto(d.Id, (int)d.SourceLanguage, (int)d.TargetLanguage, d.OwnerId, (int)d.Visibility, d.CreatedAt);
-    }
-
-    public async Task<DictionaryDto> CreateDictionaryAsync(CreateDictionaryDto dto, string userId)
+    public async Task<DictionaryListDto> CreateDictionaryAsync(CreateDictionaryDto dto, string userId)
     {
         var dictionary = new Dictionary
         {
-            Id = Guid.NewGuid(),
-            SourceLanguage = (Language)dto.SourceLanguage,
-            TargetLanguage = (Language)dto.TargetLanguage,
-            OwnerId = userId,
-            Visibility = Visibility.Private,
+            UserId = userId,
+            SourceLangId = dto.SourceLangId,
+            TargetLangId = dto.TargetLangId,
             CreatedAt = DateTime.UtcNow
         };
 
         _db.Dictionaries.Add(dictionary);
         await _db.SaveChangesAsync();
 
-        return new DictionaryDto(
-            dictionary.Id, (int)dictionary.SourceLanguage, (int)dictionary.TargetLanguage,
-            dictionary.OwnerId, (int)dictionary.Visibility, dictionary.CreatedAt);
+        var sourceLang = await _db.Languages.FindAsync(dto.SourceLangId);
+        var targetLang = await _db.Languages.FindAsync(dto.TargetLangId);
+
+        return new DictionaryListDto(
+            dictionary.Id, dictionary.SourceLangId, dictionary.TargetLangId,
+            sourceLang!.Name, targetLang!.Name);
     }
 
-    public async Task DeleteDictionaryAsync(Guid id, string userId)
+    public async Task DeleteDictionaryAsync(long id, string userId)
     {
         var dictionary = await _db.Dictionaries.FindAsync(id)
-            ?? throw new KeyNotFoundException("Dictionary not found");
+            ?? throw new KeyNotFoundException("Slovník nebyl nalezen");
 
-        if (dictionary.OwnerId == null)
-            throw new InvalidOperationException("Cannot delete system dictionary");
-
-        if (dictionary.OwnerId != userId)
-            throw new UnauthorizedAccessException("Only the owner can delete this dictionary");
+        if (dictionary.UserId != userId)
+            throw new UnauthorizedAccessException("Pouze vlastník může smazat slovník");
 
         var hasGroups = await _db.WordGroups.AnyAsync(g => g.DictionaryId == id);
         if (hasGroups)
-            throw new InvalidOperationException("Cannot delete dictionary with existing groups");
+            throw new InvalidOperationException("Nelze smazat slovník se skupinami");
 
         _db.Dictionaries.Remove(dictionary);
         await _db.SaveChangesAsync();

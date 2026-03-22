@@ -1,16 +1,16 @@
-using LexiTrek.Domain.Enums;
-
 namespace LexiTrek.Domain.Entities;
 
 public class Dictionary
 {
-    public Guid Id { get; set; }
-    public Language SourceLanguage { get; set; }
-    public Language TargetLanguage { get; set; }
-    public string? OwnerId { get; set; }
-    public Visibility Visibility { get; set; } = Visibility.Public;
+    public long Id { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public int SourceLangId { get; set; }
+    public int TargetLangId { get; set; }
     public DateTime CreatedAt { get; set; }
 
-    public AppUser? Owner { get; set; }
-    public ICollection<WordGroup> WordGroups { get; set; } = [];
+    public AppUser User { get; set; } = null!;
+    public Language SourceLang { get; set; } = null!;
+    public Language TargetLang { get; set; } = null!;
+    public ICollection<WordGroup> Groups { get; set; } = [];
+    public ICollection<DictionaryEntry> Entries { get; set; } = [];
 }

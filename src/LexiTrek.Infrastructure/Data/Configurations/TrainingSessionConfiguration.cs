@@ -9,6 +9,7 @@ public class TrainingSessionConfiguration : IEntityTypeConfiguration<TrainingSes
     public void Configure(EntityTypeBuilder<TrainingSession> builder)
     {
         builder.HasKey(s => s.Id);
+        builder.Property(s => s.Id).UseIdentityAlwaysColumn();
 
         builder.HasOne(s => s.User)
             .WithMany(u => u.TrainingSessions)

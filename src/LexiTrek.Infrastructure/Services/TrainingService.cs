@@ -14,65 +14,72 @@ public class TrainingService : ITrainingService
 
     public TrainingService(AppDbContext db) => _db = db;
 
-    public async Task<List<TrainingWordDto>> GetTrainingWordsAsync(Guid? groupId, Guid? tagId, int count, string userId)
+    public async Task<List<TrainingWordDto>> GetTrainingWordsAsync(long? groupId, long? tagId, int count, string userId)
     {
-        IQueryable<Word> wordQuery;
+        IQueryable<DictionaryEntry> entryQuery;
 
         if (groupId.HasValue)
         {
             var group = await _db.WordGroups.FindAsync(groupId.Value)
-                ?? throw new KeyNotFoundException("Group not found");
+                ?? throw new KeyNotFoundException("Skupina nenalezena");
 
-            if (group.Visibility == Visibility.Private && group.OwnerId != userId)
-            {
-                var isSub = await _db.GroupSubscriptions
-                    .AnyAsync(s => s.GroupId == groupId.Value && s.UserId == userId);
-                if (!isSub) throw new UnauthorizedAccessException("Access denied");
-            }
+            if (!group.IsPublic && group.OwnerId != userId)
+                throw new UnauthorizedAccessException("Přístup zamítnut");
 
-            wordQuery = _db.Words.Where(w => w.GroupId == groupId.Value);
+            entryQuery = _db.DictionaryEntries
+                .Where(e => e.GroupIds.Contains(groupId.Value) && e.IsActive);
         }
         else if (tagId.HasValue)
         {
             var tag = await _db.Tags.FindAsync(tagId.Value)
-                ?? throw new KeyNotFoundException("Tag not found");
-            if (tag.OwnerId != userId)
-                throw new UnauthorizedAccessException("Access denied");
+                ?? throw new KeyNotFoundException("Tag nenalezen");
+            if (tag.OwnerId != userId) throw new UnauthorizedAccessException("Přístup zamítnut");
 
-            wordQuery = _db.WordTags
-                .Where(wt => wt.TagId == tagId.Value)
-                .Select(wt => wt.Word);
+            entryQuery = _db.DictionaryEntryTags
+                .Where(et => et.TagId == tagId.Value)
+                .Select(et => et.Entry)
+                .Where(e => e.IsActive);
         }
         else
         {
-            throw new ArgumentException("Either groupId or tagId must be provided");
+            throw new ArgumentException("Musí být zadán groupId nebo tagId");
         }
 
-        var wordIds = await wordQuery.Select(w => w.Id).ToListAsync();
+        var wordPairIds = await entryQuery.Select(e => e.WordPairId).Distinct().ToListAsync();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var progressMap = await _db.WordProgresses
-            .Where(p => p.UserId == userId && wordIds.Contains(p.WordId))
-            .ToDictionaryAsync(p => p.WordId);
+        var progressMap = await _db.UserWordProgresses
+            .Where(p => p.UserId == userId && wordPairIds.Contains(p.WordPairId))
+            .ToDictionaryAsync(p => p.WordPairId);
 
-        // Priority 1: New words (no progress)
-        var newWordIds = wordIds.Where(id => !progressMap.ContainsKey(id)).ToList();
+        var newIds = wordPairIds.Where(id => !progressMap.ContainsKey(id)).ToList();
+        var dueIds = progressMap
+            .Where(kv => kv.Value.NextReview <= today)
+            .OrderBy(kv => kv.Value.NextReview)
+            .Select(kv => kv.Key).ToList();
 
-        // Priority 2: Words due for review
-        var dueWordIds = progressMap
-            .Where(kv => kv.Value.NextReviewDate <= today)
-            .OrderBy(kv => kv.Value.NextReviewDate)
-            .Select(kv => kv.Key)
-            .ToList();
+        var selectedIds = newIds.Concat(dueIds).Take(count).ToList();
 
-        var selectedIds = newWordIds.Concat(dueWordIds).Take(count).ToList();
+        if (groupId.HasValue)
+        {
+            var groupName = await _db.WordGroups.Where(g => g.Id == groupId.Value).Select(g => g.Name).FirstAsync();
+            return await entryQuery
+                .Where(e => selectedIds.Contains(e.WordPairId))
+                .Include(e => e.WordPair).ThenInclude(wp => wp.SourceWord)
+                .Include(e => e.WordPair).ThenInclude(wp => wp.TargetWord)
+                .Select(e => new TrainingWordDto(
+                    e.WordPairId, e.WordPair.SourceWord.Text, e.WordPair.TargetWord.Text,
+                    e.Notes, groupId.Value, groupName))
+                .ToListAsync();
+        }
 
-        return await _db.Words
-            .Where(w => selectedIds.Contains(w.Id))
-            .Include(w => w.Group)
-            .Select(w => new TrainingWordDto(
-                w.Id, w.Term, w.Definition, w.Notes,
-                w.GroupId, w.Group.Name))
+        return await entryQuery
+            .Where(e => selectedIds.Contains(e.WordPairId))
+            .Include(e => e.WordPair).ThenInclude(wp => wp.SourceWord)
+            .Include(e => e.WordPair).ThenInclude(wp => wp.TargetWord)
+            .Select(e => new TrainingWordDto(
+                e.WordPairId, e.WordPair.SourceWord.Text, e.WordPair.TargetWord.Text,
+                e.Notes, 0, ""))
             .ToListAsync();
     }
 
@@ -80,66 +87,44 @@ public class TrainingService : ITrainingService
     {
         var session = new TrainingSession
         {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Mode = (TrainingMode)dto.Mode,
-            GroupId = dto.GroupId,
-            TagId = dto.TagId,
-            StartedAt = DateTime.UtcNow,
-            IsCompleted = false,
+            UserId = userId, Mode = (TrainingMode)dto.Mode,
+            GroupId = dto.GroupId, TagId = dto.TagId,
+            StartedAt = DateTime.UtcNow, IsCompleted = false,
             ClientSessionId = Guid.NewGuid()
         };
-
         _db.TrainingSessions.Add(session);
         await _db.SaveChangesAsync();
 
-        return new SessionDto(
-            session.Id, (int)session.Mode, session.GroupId,
-            session.TagId, session.StartedAt, session.IsCompleted);
+        return new SessionDto(session.Id, (int)session.Mode, session.GroupId, session.TagId, session.StartedAt, session.IsCompleted);
     }
 
-    public async Task<SessionResultsDto> CompleteSessionAsync(Guid sessionId, CompleteSessionDto dto, string userId)
+    public async Task<SessionResultsDto> CompleteSessionAsync(long sessionId, CompleteSessionDto dto, string userId)
     {
-        var session = await _db.TrainingSessions
-            .Include(s => s.Results)
-            .FirstOrDefaultAsync(s => s.Id == sessionId)
-            ?? throw new KeyNotFoundException("Session not found");
+        var session = await _db.TrainingSessions.Include(s => s.Results).FirstOrDefaultAsync(s => s.Id == sessionId)
+            ?? throw new KeyNotFoundException("Session nenalezena");
+        if (session.UserId != userId) throw new UnauthorizedAccessException("Přístup zamítnut");
+        if (session.IsCompleted) throw new InvalidOperationException("Session je již dokončena");
 
-        if (session.UserId != userId)
-            throw new UnauthorizedAccessException("Access denied");
-
-        if (session.IsCompleted)
-            throw new InvalidOperationException("Session already completed");
-
-        // Save results
         foreach (var r in dto.Results)
         {
             session.Results.Add(new TrainingResult
             {
-                Id = Guid.NewGuid(),
-                SessionId = sessionId,
-                WordId = r.WordId,
-                Result = (TrainingResultType)r.Result,
-                AnsweredAt = r.AnsweredAt
+                SessionId = sessionId, WordPairId = r.WordPairId,
+                Result = (TrainingResultType)r.Result, AnsweredAt = r.AnsweredAt
             });
 
-            // Update spaced repetition progress
-            var progress = await _db.WordProgresses
-                .FirstOrDefaultAsync(p => p.UserId == userId && p.WordId == r.WordId);
+            var progress = await _db.UserWordProgresses
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.WordPairId == r.WordPairId);
 
             if (progress == null)
             {
-                progress = new WordProgress
+                progress = new UserWordProgress
                 {
-                    Id = Guid.NewGuid(),
-                    UserId = userId,
-                    WordId = r.WordId,
-                    EaseFactor = 2.5,
-                    IntervalDays = 0,
-                    RepetitionCount = 0,
-                    NextReviewDate = DateOnly.FromDateTime(DateTime.UtcNow)
+                    UserId = userId, WordPairId = r.WordPairId,
+                    EaseFactor = 2.5, IntervalDays = 0, Repetitions = 0,
+                    NextReview = DateOnly.FromDateTime(DateTime.UtcNow)
                 };
-                _db.WordProgresses.Add(progress);
+                _db.UserWordProgresses.Add(progress);
             }
 
             SpacedRepetitionService.UpdateProgress(progress, (TrainingResultType)r.Result);
@@ -147,30 +132,23 @@ public class TrainingService : ITrainingService
 
         session.IsCompleted = true;
         session.CompletedAt = DateTime.UtcNow;
-
         await _db.SaveChangesAsync();
 
-        // Build response
-        var wordIds = dto.Results.Select(r => r.WordId).ToList();
-        var words = await _db.Words
-            .Where(w => wordIds.Contains(w.Id))
-            .ToDictionaryAsync(w => w.Id);
+        var wordPairIds = dto.Results.Select(r => r.WordPairId).ToList();
+        var wordPairs = await _db.WordPairs
+            .Where(wp => wordPairIds.Contains(wp.Id))
+            .Include(wp => wp.SourceWord).Include(wp => wp.TargetWord)
+            .ToDictionaryAsync(wp => wp.Id);
 
         var wordResults = dto.Results.Select(r => new WordResultDto(
-            r.WordId,
-            words.TryGetValue(r.WordId, out var w) ? w.Term : "",
-            w?.Definition ?? "",
-            r.Result
-        )).ToList();
+            r.WordPairId,
+            wordPairs.TryGetValue(r.WordPairId, out var wp) ? wp.SourceWord.Text : "",
+            wp?.TargetWord.Text ?? "", r.Result)).ToList();
 
         return new SessionResultsDto(
-            session.Id,
-            dto.Results.Count,
-            dto.Results.Count(r => r.Result == 0),
-            dto.Results.Count(r => r.Result == 1),
+            session.Id, dto.Results.Count,
+            dto.Results.Count(r => r.Result == 0), dto.Results.Count(r => r.Result == 1),
             dto.Results.Count(r => r.Result == 2),
-            session.StartedAt,
-            session.CompletedAt!.Value,
-            wordResults);
+            session.StartedAt, session.CompletedAt!.Value, wordResults);
     }
 }

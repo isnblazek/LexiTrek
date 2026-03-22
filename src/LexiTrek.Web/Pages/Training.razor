@@ -1,4 +1,4 @@
-@page "/training/{SessionId:guid}"
+@page "/training/{SessionId:long}"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject TrainingApiService TrainingService
 @inject NavigationManager Navigation
@@ -26,12 +26,12 @@ else if (_currentIndex < _words.Count)
             <MudCardContent Class="d-flex flex-column justify-center align-center" Style="min-height: 250px;">
                 @if (!_flipped)
                 {
-                    <MudText Typo="Typo.h3">@_words[_currentIndex].Term</MudText>
+                    <MudText Typo="Typo.h3">@_words[_currentIndex].SourceText</MudText>
                     <MudText Typo="Typo.caption" Class="mt-2">Klikněte pro zobrazení odpovědi</MudText>
                 }
                 else
                 {
-                    <MudText Typo="Typo.h3" Color="Color.Primary">@_words[_currentIndex].Definition</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Primary">@_words[_currentIndex].TargetText</MudText>
                     @if (!string.IsNullOrEmpty(_words[_currentIndex].Notes))
                     {
                         <MudText Typo="Typo.body2" Class="mt-2">@_words[_currentIndex].Notes</MudText>
@@ -68,7 +68,7 @@ else if (_currentIndex < _words.Count)
 }
 
 @code {
-    [Parameter] public Guid SessionId { get; set; }
+    [Parameter] public long SessionId { get; set; }
 
     [SupplyParameterFromQuery(Name = "groupId")]
     public string? GroupIdStr { get; set; }
@@ -87,8 +87,8 @@ else if (_currentIndex < _words.Count)
 
     protected override async Task OnInitializedAsync()
     {
-        Guid? groupId = Guid.TryParse(GroupIdStr, out var gid) ? gid : null;
-        Guid? tagId = Guid.TryParse(TagIdStr, out var tid) ? tid : null;
+        long? groupId = long.TryParse(GroupIdStr, out var did) ? did : null;
+        long? tagId = long.TryParse(TagIdStr, out var tid) ? tid : null;
 
         _words = await TrainingService.GetTrainingWordsAsync(groupId, tagId, Count);
         _loading = false;
@@ -98,7 +98,7 @@ else if (_currentIndex < _words.Count)
 
     private async Task Answer(int result)
     {
-        _results.Add(new TrainingResultDto(_words[_currentIndex].Id, result, DateTime.UtcNow));
+        _results.Add(new TrainingResultDto(_words[_currentIndex].WordPairId, result, DateTime.UtcNow));
         _currentIndex++;
         _flipped = false;
 

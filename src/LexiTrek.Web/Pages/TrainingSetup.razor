@@ -25,7 +25,7 @@
                 <MudSelect @bind-Value="_selectedGroupId" Label="Vyberte skupinu" Variant="Variant.Outlined" Class="mt-4">
                     @foreach (var group in FilteredGroups)
                     {
-                        <MudSelectItem Value="group.Id">@group.Name (@group.WordCount slovíček)</MudSelectItem>
+                        <MudSelectItem Value="group.Id">@group.Name (@group.EntryCount slovíček)</MudSelectItem>
                     }
                 </MudSelect>
             }
@@ -39,22 +39,17 @@
                 </MudSelect>
             }
 
-            <MudNumericField @bind-Value="_count" Label="Počet slovíček" Variant="Variant.Outlined" Class="mt-4"
-                             Min="5" Max="50" />
+            <MudNumericField @bind-Value="_count" Label="Počet slovíček" Variant="Variant.Outlined" Class="mt-4" Min="5" Max="50" />
         </MudCardContent>
         <MudCardActions>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartTrainingAsync"
-                       Disabled="_loading" FullWidth="true">
-                Začít trénink
-            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartTrainingAsync" Disabled="_loading" FullWidth="true">Začít trénink</MudButton>
         </MudCardActions>
     </MudCard>
 </MudContainer>
 
 @code {
     private int _mode;
-    private Guid _selectedGroupId;
-    private Guid _selectedTagId;
+    private long _selectedGroupId, _selectedTagId;
     private int _count = 20;
     private bool _loading;
     private List<GroupListDto> _groups = [];
@@ -74,20 +69,9 @@
         _groups = await GroupService.GetUserGroupsAsync();
         _tags = await TagService.GetTagsAsync();
 
-        if (Guid.TryParse(PreselectedGroupId, out var gid))
-        {
-            _selectedGroupId = gid;
-            _mode = 0;
-        }
-        else if (FilteredGroups.Any())
-        {
-            _selectedGroupId = FilteredGroups.First().Id;
-        }
-
-        if (_tags.Any())
-        {
-            _selectedTagId = _tags[0].Id;
-        }
+        if (long.TryParse(PreselectedGroupId, out var gid)) { _selectedGroupId = gid; _mode = 0; }
+        else if (FilteredGroups.Any()) _selectedGroupId = FilteredGroups.First().Id;
+        if (_tags.Any()) _selectedTagId = _tags[0].Id;
     }
 
     private void OnDictionaryChanged() => InvokeAsync(StateHasChanged);
@@ -95,30 +79,15 @@
     private async Task StartTrainingAsync()
     {
         _loading = true;
-
-        Guid? groupId = _mode == 0 ? _selectedGroupId : null;
-        Guid? tagId = _mode == 1 ? _selectedTagId : null;
+        long? groupId = _mode == 0 ? _selectedGroupId : null;
+        long? tagId = _mode == 1 ? _selectedTagId : null;
 
         var words = await TrainingService.GetTrainingWordsAsync(groupId, tagId, _count);
-        if (!words.Any())
-        {
-            Snackbar.Add("Žádná slovíčka k tréninku.", Severity.Warning);
-            _loading = false;
-            return;
-        }
+        if (!words.Any()) { Snackbar.Add("Žádná slovíčka k tréninku.", Severity.Warning); _loading = false; return; }
 
-        var session = await TrainingService.StartSessionAsync(
-            new StartSessionDto(_mode, groupId, tagId));
-
-        if (session != null)
-        {
-            Navigation.NavigateTo($"/training/{session.Id}?groupId={groupId}&tagId={tagId}&count={_count}");
-        }
-        else
-        {
-            Snackbar.Add("Chyba při zahájení tréninku.", Severity.Error);
-        }
-
+        var session = await TrainingService.StartSessionAsync(new StartSessionDto(_mode, groupId, tagId));
+        if (session != null) Navigation.NavigateTo($"/training/{session.Id}?groupId={groupId}&tagId={tagId}&count={_count}");
+        else Snackbar.Add("Chyba při zahájení tréninku.", Severity.Error);
         _loading = false;
     }
 

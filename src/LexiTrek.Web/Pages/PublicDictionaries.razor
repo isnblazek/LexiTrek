@@ -30,21 +30,13 @@ else
                 <MudCard>
                     <MudCardContent>
                         <MudText Typo="Typo.h6">@group.Name</MudText>
-                        <MudText Typo="Typo.body2">@group.WordCount slovíček</MudText>
+                        <MudText Typo="Typo.body2">@group.EntryCount slovíček</MudText>
                         <MudText Typo="Typo.caption">Autor: @group.OwnerDisplayName</MudText>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            @LanguageHelper.GetDisplayName((Language)group.SourceLanguage) ↔ @LanguageHelper.GetDisplayName((Language)group.TargetLanguage)
-                        </MudText>
-                        @if (!string.IsNullOrEmpty(group.Description))
-                        {
-                            <MudText Typo="Typo.caption" Class="mt-1">@group.Description</MudText>
-                        }
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@group.SourceLangName ↔ @group.TargetLangName</MudText>
                     </MudCardContent>
                     <MudCardActions>
                         <MudButton Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled"
-                                   OnClick="@(() => SubscribeAsync(group.Id))">
-                            Přidat k mým
-                        </MudButton>
+                                   OnClick="@(() => ForkAsync(group.Id))">Převzít (fork)</MudButton>
                     </MudCardActions>
                 </MudCard>
             </MudItem>
@@ -77,34 +69,16 @@ else
         _loading = false;
     }
 
-    private async void OnDictionaryChanged()
-    {
-        _page = 1;
-        await LoadAsync();
-        await InvokeAsync(StateHasChanged);
-    }
+    private async void OnDictionaryChanged() { _page = 1; await LoadAsync(); await InvokeAsync(StateHasChanged); }
 
-    private async Task HandleSearch(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            _page = 1;
-            await LoadAsync();
-        }
-    }
+    private async Task HandleSearch(KeyboardEventArgs e) { if (e.Key == "Enter") { _page = 1; await LoadAsync(); } }
+    private async Task PageChanged(int page) { _page = page; await LoadAsync(); }
 
-    private async Task PageChanged(int page)
+    private async Task ForkAsync(long groupId)
     {
-        _page = page;
-        await LoadAsync();
-    }
-
-    private async Task SubscribeAsync(Guid groupId)
-    {
-        if (await GroupService.SubscribeAsync(groupId))
-            Snackbar.Add("Skupina přidána!", Severity.Success);
-        else
-            Snackbar.Add("Nepodařilo se přidat skupinu.", Severity.Error);
+        var result = await GroupService.ForkGroupAsync(groupId);
+        if (result != null) { await DictState.LoadAsync(); Snackbar.Add("Skupina převzata!", Severity.Success); }
+        else Snackbar.Add("Nepodařilo se převzít skupinu.", Severity.Error);
     }
 
     public void Dispose() => DictState.OnChange -= OnDictionaryChanged;

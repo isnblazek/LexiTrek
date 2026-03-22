@@ -5,11 +5,12 @@ namespace LexiTrek.Application.Interfaces;
 public interface IGroupService
 {
     Task<List<GroupListDto>> GetUserGroupsAsync(string userId);
-    Task<GroupDto> GetGroupAsync(Guid id, string userId);
+    Task<GroupDto> GetGroupAsync(long id, string userId);
     Task<GroupDto> CreateGroupAsync(CreateGroupDto dto, string userId);
-    Task<GroupDto> UpdateGroupAsync(Guid id, UpdateGroupDto dto, string userId);
-    Task DeleteGroupAsync(Guid id, string userId);
+    Task<GroupDto> UpdateGroupAsync(long id, UpdateGroupDto dto, string userId);
+    Task DeleteGroupAsync(long id, string userId);
     Task<PagedResult<GroupListDto>> GetPublicGroupsAsync(PublicGroupsRequest request);
-    Task SubscribeAsync(Guid groupId, string userId);
-    Task UnsubscribeAsync(Guid groupId, string userId);
+    Task<GroupDto> ForkGroupAsync(long sourceGroupId, string userId);
+    Task AddEntryToGroupAsync(long groupId, long entryId, string userId);
+    Task RemoveEntryFromGroupAsync(long groupId, long entryId, string userId);
 }

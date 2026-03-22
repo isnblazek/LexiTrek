@@ -5,8 +5,8 @@
     <TitleContent>Upravit slovíčko</TitleContent>
     <DialogContent>
         <MudForm @ref="_form">
-            <MudTextField @bind-Value="_term" Label="Výraz" Variant="Variant.Outlined" Class="mb-3" Required="true" />
-            <MudTextField @bind-Value="_definition" Label="Překlad" Variant="Variant.Outlined" Class="mb-3" Required="true" />
+            <MudTextField @bind-Value="_sourceText" Label="Výraz" Variant="Variant.Outlined" Class="mb-3" Required="true" />
+            <MudTextField @bind-Value="_targetText" Label="Překlad" Variant="Variant.Outlined" Class="mb-3" Required="true" />
             <MudTextField @bind-Value="_notes" Label="Poznámky" Variant="Variant.Outlined" Class="mb-3" />
             <MudTextField @bind-Value="_tagsInput" Label="Tagy (oddělené čárkou)" Variant="Variant.Outlined"
                           HelperText="Např. jídlo, sloveso, B2" />
@@ -20,21 +20,21 @@
 
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
-    [Parameter] public WordDto Word { get; set; } = default!;
+    [Parameter] public DictionaryEntryDto Entry { get; set; } = default!;
 
     private MudForm _form = default!;
     private bool _saving;
-    private string _term = "";
-    private string _definition = "";
+    private string _sourceText = "";
+    private string _targetText = "";
     private string? _notes;
     private string _tagsInput = "";
 
     protected override void OnInitialized()
     {
-        _term = Word.Term;
-        _definition = Word.Definition;
-        _notes = Word.Notes;
-        _tagsInput = string.Join(", ", Word.Tags.Select(t => t.Name));
+        _sourceText = Entry.SourceText;
+        _targetText = Entry.TargetText;
+        _notes = Entry.Notes;
+        _tagsInput = string.Join(", ", Entry.Tags.Select(t => t.Name));
     }
 
     private void Cancel() => MudDialog.Cancel();
@@ -46,7 +46,7 @@
 
         _saving = true;
 
-        var updated = await WordService.UpdateWordAsync(Word.Id, new UpdateWordDto(_term, _definition, _notes));
+        var updated = await WordService.UpdateEntryAsync(Entry.Id, new UpdateEntryDto(_sourceText, _targetText, _notes));
         if (updated == null)
         {
             _saving = false;
@@ -79,19 +79,19 @@
             }
         }
 
-        var currentTagIds = Word.Tags.Select(t => t.Id).ToHashSet();
+        var currentTagIds = Entry.Tags.Select(t => t.Id).ToHashSet();
         var desiredTagIds = resolvedTags.Select(t => t.Id).ToHashSet();
 
         var toAdd = desiredTagIds.Except(currentTagIds).ToList();
         var toRemove = currentTagIds.Except(desiredTagIds).ToList();
 
         if (toAdd.Count > 0)
-            await TagService.AssignTagsAsync(Word.Id, new AssignTagsDto(toAdd));
+            await TagService.AssignTagsAsync(Entry.Id, new AssignTagsDto(toAdd));
 
         foreach (var tagId in toRemove)
-            await TagService.RemoveTagAsync(Word.Id, tagId);
+            await TagService.RemoveTagAsync(Entry.Id, tagId);
 
-        var resultWord = updated with { Tags = resolvedTags };
-        MudDialog.Close(DialogResult.Ok(resultWord));
+        var resultEntry = updated with { Tags = resolvedTags };
+        MudDialog.Close(DialogResult.Ok(resultEntry));
     }
 }

@@ -12,7 +12,7 @@ public class GroupApiService
     public async Task<List<GroupListDto>> GetUserGroupsAsync()
         => await _http.GetFromJsonAsync<List<GroupListDto>>("api/groups") ?? [];
 
-    public async Task<GroupDto?> GetGroupAsync(Guid id)
+    public async Task<GroupDto?> GetGroupAsync(long id)
         => await _http.GetFromJsonAsync<GroupDto>($"api/groups/{id}");
 
     public async Task<GroupDto?> CreateGroupAsync(CreateGroupDto dto)
@@ -23,7 +23,7 @@ public class GroupApiService
             : null;
     }
 
-    public async Task<GroupDto?> UpdateGroupAsync(Guid id, UpdateGroupDto dto)
+    public async Task<GroupDto?> UpdateGroupAsync(long id, UpdateGroupDto dto)
     {
         var response = await _http.PutAsJsonAsync($"api/groups/{id}", dto);
         return response.IsSuccessStatusCode
@@ -31,13 +31,13 @@ public class GroupApiService
             : null;
     }
 
-    public async Task<bool> DeleteGroupAsync(Guid id)
+    public async Task<bool> DeleteGroupAsync(long id)
     {
         var response = await _http.DeleteAsync($"api/groups/{id}");
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<PagedResult<GroupListDto>?> GetPublicGroupsAsync(string? search, int page = 1, Guid? dictionaryId = null)
+    public async Task<PagedResult<GroupListDto>?> GetPublicGroupsAsync(string? search, int page = 1, long? dictionaryId = null)
     {
         var url = $"api/groups/public?page={page}&pageSize=20";
         if (!string.IsNullOrWhiteSpace(search)) url += $"&search={Uri.EscapeDataString(search)}";
@@ -45,15 +45,11 @@ public class GroupApiService
         return await _http.GetFromJsonAsync<PagedResult<GroupListDto>>(url);
     }
 
-    public async Task<bool> SubscribeAsync(Guid groupId)
+    public async Task<GroupDto?> ForkGroupAsync(long groupId)
     {
-        var response = await _http.PostAsync($"api/groups/{groupId}/subscribe", null);
-        return response.IsSuccessStatusCode;
-    }
-
-    public async Task<bool> UnsubscribeAsync(Guid groupId)
-    {
-        var response = await _http.DeleteAsync($"api/groups/{groupId}/subscribe");
-        return response.IsSuccessStatusCode;
+        var response = await _http.PostAsync($"api/groups/{groupId}/fork", null);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<GroupDto>()
+            : null;
     }
 }

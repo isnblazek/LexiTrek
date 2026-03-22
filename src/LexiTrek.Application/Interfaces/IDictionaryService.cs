@@ -5,7 +5,6 @@ namespace LexiTrek.Application.Interfaces;
 public interface IDictionaryService
 {
     Task<List<DictionaryListDto>> GetDictionariesAsync(string userId);
-    Task<DictionaryDto> GetDictionaryAsync(Guid id);
-    Task<DictionaryDto> CreateDictionaryAsync(CreateDictionaryDto dto, string userId);
-    Task DeleteDictionaryAsync(Guid id, string userId);
+    Task<DictionaryListDto> CreateDictionaryAsync(CreateDictionaryDto dto, string userId);
+    Task DeleteDictionaryAsync(long id, string userId);
 }

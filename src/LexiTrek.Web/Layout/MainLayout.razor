@@ -14,13 +14,13 @@
 
                 @if (DictState.Dictionaries.Any())
                 {
-                    <MudSelect T="Guid?" Value="DictState.SelectedDictionaryId" ValueChanged="OnDictionaryChanged"
+                    <MudSelect T="long?" Value="DictState.SelectedDictionaryId" ValueChanged="OnDictionaryChanged"
                                Class="ml-4 appbar-dictionary-select" Variant="Variant.Outlined"
                                Dense="true" Margin="Margin.Dense"
                                Style="max-width: 280px; color: white;">
                         @foreach (var dict in DictState.Dictionaries)
                         {
-                            <MudSelectItem T="Guid?" Value="@((Guid?)dict.Id)">@LanguageHelper.GetDisplayName((Language)dict.SourceLanguage) ↔ @LanguageHelper.GetDisplayName((Language)dict.TargetLanguage)</MudSelectItem>
+                            <MudSelectItem T="long?" Value="@((long?)dict.Id)">@dict.SourceLangName ↔ @dict.TargetLangName</MudSelectItem>
                         }
                     </MudSelect>
                 }
@@ -65,15 +65,25 @@
 @code {
     private bool _drawerOpen = true;
 
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         DictState.OnChange += StateHasChanged;
-        await DictState.LoadAsync();
+        if (AuthState != null)
+        {
+            var state = await AuthState;
+            if (state.User.Identity?.IsAuthenticated == true)
+            {
+                await DictState.LoadAsync();
+            }
+        }
     }
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
 
-    private void OnDictionaryChanged(Guid? newId) => DictState.SetSelectedDictionary(newId);
+    private void OnDictionaryChanged(long? newId) => DictState.SetSelectedDictionary(newId);
 
     private async Task LogoutAsync()
     {

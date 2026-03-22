@@ -6,6 +6,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Projekt je česky. UI texty, komentáře, commit messages a komunikace s uživatelem jsou v češtině.
 
+## Specifikace aplikace
+
+LexiTrek je webová aplikace pro učení slovíček metodou spaced repetition (SM-2).
+
+### Doménový model
+
+```
+Uživatel
+  └── Slovník (Dictionary) = jazykový pár (CZ↔EN), bez názvu
+        ├── DictionaryEntry = slovíčko (→ WordPair → Word+Word), jednou per slovník
+        │     ├── Notes (poznámka, sdílená napříč skupinami)
+        │     ├── Tags (přes DictionaryEntryTag, sdílené napříč skupinami)
+        │     ├── GroupIds[] (ve kterých skupinách je, bigint array + GIN index)
+        │     └── IsActive (soft delete)
+        └── WordGroup = pojmenovaná kolekce (M:N přes GroupIds array)
+              ├── IsPublic (veřejná skupina)
+              └── SourceGroupId (fork zdroj)
+
+Word, WordPair = globální, deduplikované, bez vlastníka
+UserWordProgress = per uživatel per WordPair (ne per skupina)
+TrainingSession → TrainingResult = historie tréninku
+```
+
+### Klíčové principy
+
+- **Deduplikace slov:** Word("apple", EN) existuje jednou v DB. WordPair("jablko"↔"apple") existuje jednou. Sdílené napříč uživateli.
+- **Slovíčko ve slovníku jednou:** DictionaryEntry per (DictionaryId, WordPairId) — unique constraint. Poznámky a tagy jsou na této úrovni.
+- **Skupiny = M:N organizace:** Slovíčko může být ve více skupinách. Členství = `GroupIds bigint[]` array na DictionaryEntry (žádná junction tabulka).
+- **Fork skupiny:** Hard copy — nová slovíčka se vytvoří, existující se jen přiřadí do skupiny (moje poznámky/tagy zůstanou).
+- **Progress globální:** UserWordProgress navázán na WordPairId. Stejný překlad ve více skupinách = jeden progress.
+- **Find-or-create:** Při přidání slovíčka: find-or-create Word → WordPair → DictionaryEntry → přiřadit do skupiny.
+
+### DB schéma
+
+Kompletní specifikace v `lexitrek-db-design.md`.
+
 ## Příkazy
 
 ```bash
@@ -36,11 +72,47 @@ Clean Architecture — Blazor WebAssembly frontend hostovaný přes ASP.NET Core
 |---------|------|
 | `LexiTrek.Api` | ASP.NET Core host — API controllery, servíruje WASM frontend, JWT autentizace |
 | `LexiTrek.Web` | Blazor WebAssembly frontend — MudBlazor UI, klientská autentizace |
-| `LexiTrek.Application` | Use cases, business logika, rozhraní služeb (IAuthService, IDictionaryService…) |
-| `LexiTrek.Domain` | Doménové entity, žádné závislosti |
+| `LexiTrek.Application` | Use cases, business logika, rozhraní služeb (IAuthService, IDictionaryService, IGroupService…) |
+| `LexiTrek.Domain` | Doménové entity (Dictionary, WordGroup, DictionaryEntry, Word, WordPair, Tag…), žádné závislosti |
 | `LexiTrek.Infrastructure` | EF Core DbContext, ASP.NET Identity, implementace služeb |
 | `LexiTrek.Shared` | Sdílené DTO a enumy (používá Web i Application) |
 | `LexiTrek.Tests` | xUnit testy pro Domain a Application |
+
+### API endpointy
+
+| Endpoint | Popis |
+|----------|-------|
+| `GET/POST/DELETE api/dictionaries` | CRUD slovníků (jazykových párů) |
+| `GET/POST/PUT/DELETE api/groups` | CRUD skupin |
+| `GET api/groups/public` | Veřejné skupiny |
+| `POST api/groups/{id}/fork` | Fork veřejné skupiny |
+| `POST/DELETE api/groups/{id}/entries/{entryId}` | Přiřazení/odebrání slovíčka ze skupiny |
+| `GET api/dictionaries/{id}/entries` | Slovíčka ve slovníku |
+| `GET api/groups/{id}/entries` | Slovíčka filtrovaná skupinou |
+| `POST api/dictionaries/{id}/entries` | Přidání slovíčka (+ volitelné ?groupId) |
+| `PUT/DELETE api/entries/{id}` | Úprava/smazání slovíčka |
+| `POST/DELETE api/entries/{id}/tags` | Přiřazení/odebrání tagů |
+| `GET/POST/PUT/DELETE api/tags` | CRUD tagů |
+| `GET api/training/words` | Slovíčka k tréninku |
+| `POST api/training/sessions` | Zahájení session |
+| `PUT api/training/sessions/{id}/complete` | Dokončení session |
+| `GET api/languages` | Seznam jazyků |
+| `POST api/auth/register\|login\|refresh` | Autentizace |
+
+### UI stránky
+
+| Route | Stránka | Popis |
+|-------|---------|-------|
+| `/` | Home | Dashboard (přihlášený) / landing page (nepřihlášený) |
+| `/groups` | Groups | Moje skupiny (filtrované podle slovníku v AppBar) |
+| `/groups/create` | DictionaryCreate | Vytvoření skupiny (název, popis, slovník) |
+| `/groups/{id}` | DictionaryDetail | Detail skupiny — slovíčka, přidání, editace, trénink |
+| `/groups/public` | PublicDictionaries | Veřejné skupiny s fork funkcí |
+| `/settings` | Settings | Správa slovníků (vytvoření jazykového páru) |
+| `/tags` | Tags | Správa tagů |
+| `/training/setup` | TrainingSetup | Výběr skupiny/tagu a počtu slov |
+| `/training/{id}` | Training | Kartičkový trénink (flip, Red/Orange/Green) |
+| `/training/{id}/results` | TrainingResults | Výsledky tréninku |
 
 ## Deploy (lokální vývoj)
 
@@ -92,3 +164,7 @@ dotnet watch run --project src/LexiTrek.Api --launch-profile http
 
 - **.NET 10**, C# latest, nullable enabled, implicit usings
 - **PostgreSQL 17** s `pg_trgm` rozšířením pro fulltext
+- **ID typy:** `long` (bigint) pro doménové entity, `string` pro AppUser (ASP.NET Identity)
+- **Composite PK:** `DictionaryEntry(Id, DictionaryId)`, `UserWordProgress(UserId, WordPairId)` — připraveno pro HASH partitioning
+- **Soft delete:** `IsActive` flag na DictionaryEntry (ne fyzické mazání)
+- **Array sloupec:** `GroupIds bigint[]` s GIN indexem místo junction tabulky (optimalizace pro škálování)

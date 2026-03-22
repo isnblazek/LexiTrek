@@ -1,30 +1,30 @@
 namespace LexiTrek.Shared.DTOs;
 
-public record StartSessionDto(int Mode, Guid? GroupId, Guid? TagId);
+public record StartSessionDto(int Mode, long? GroupId, long? TagId);
 
 public record SessionDto(
-    Guid Id,
+    long Id,
     int Mode,
-    Guid? GroupId,
-    Guid? TagId,
+    long? GroupId,
+    long? TagId,
     DateTime StartedAt,
     bool IsCompleted
 );
 
 public record CompleteSessionDto(List<TrainingResultDto> Results);
-public record TrainingResultDto(Guid WordId, int Result, DateTime AnsweredAt);
+public record TrainingResultDto(long WordPairId, int Result, DateTime AnsweredAt);
 
 public record TrainingWordDto(
-    Guid Id,
-    string Term,
-    string Definition,
+    long WordPairId,
+    string SourceText,
+    string TargetText,
     string? Notes,
-    Guid GroupId,
+    long GroupId,
     string GroupName
 );
 
 public record SessionResultsDto(
-    Guid SessionId,
+    long SessionId,
     int TotalWords,
     int RedCount,
     int OrangeCount,
@@ -35,8 +35,8 @@ public record SessionResultsDto(
 );
 
 public record WordResultDto(
-    Guid WordId,
-    string Term,
-    string Definition,
+    long WordPairId,
+    string SourceText,
+    string TargetText,
     int Result
 );

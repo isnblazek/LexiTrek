@@ -3,7 +3,6 @@
 @inject GroupApiService GroupService
 @inject DictionaryStateService DictState
 @inject NavigationManager Navigation
-@inject IDialogService DialogService
 @implements IDisposable
 
 <PageTitle>Moje skupiny - LexiTrek</PageTitle>
@@ -32,13 +31,13 @@ else
                 <MudCard>
                     <MudCardContent>
                         <MudText Typo="Typo.h6">@group.Name</MudText>
-                        <MudText Typo="Typo.body2">@group.WordCount slovíček</MudText>
+                        <MudText Typo="Typo.body2">@group.EntryCount slovíček</MudText>
                         <MudChip T="string" Size="Size.Small"
-                                 Color="@(group.Visibility == 1 ? Color.Success : Color.Default)">
-                            @(group.Visibility == 1 ? "Veřejná" : "Soukromá")
+                                 Color="@(group.IsPublic ? Color.Success : Color.Default)">
+                            @(group.IsPublic ? "Veřejná" : "Soukromá")
                         </MudChip>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            @LanguageHelper.GetDisplayName((Language)group.SourceLanguage) ↔ @LanguageHelper.GetDisplayName((Language)group.TargetLanguage)
+                            @group.SourceLangName ↔ @group.TargetLangName
                         </MudText>
                         @if (!string.IsNullOrEmpty(group.Description))
                         {

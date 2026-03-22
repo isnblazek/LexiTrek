@@ -1,0 +1,199 @@
+@page "/groups/{Id:long}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject GroupApiService GroupService
+@inject WordApiService WordService
+@inject TagApiService TagService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>@(_group?.Name ?? "Skupina") - LexiTrek</PageTitle>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else if (_group == null)
+{
+    <MudAlert Severity="Severity.Error">Skupina nenalezena.</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12">
+            @if (_editing)
+            {
+                <MudCard Class="mb-4">
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6" Class="mb-2">Upravit skupinu</MudText>
+                        <MudForm @ref="_form">
+                            <MudTextField @bind-Value="_editName" Label="Název" Variant="Variant.Outlined" Class="mb-3" Required="true" />
+                            <MudTextField @bind-Value="_editDescription" Label="Popis" Variant="Variant.Outlined" Class="mb-3" Lines="3" />
+                            <MudSwitch @bind-Value="_editIsPublic" Label="Veřejná" Color="Color.Success" />
+                        </MudForm>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveEditAsync" Disabled="_saving">Uložit</MudButton>
+                        <MudButton Variant="Variant.Text" OnClick="CancelEdit">Zrušit</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            }
+            else
+            {
+                <div class="d-flex align-center gap-2 mb-2">
+                    <MudText Typo="Typo.h4">@_group.Name</MudText>
+                    @if (_group.IsOwner)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="StartEdit" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="DeleteGroupAsync" />
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(_group.Description))
+                {
+                    <MudText Typo="Typo.body1" Class="mb-2">@_group.Description</MudText>
+                }
+                <MudChip T="string" Size="Size.Small" Color="@(_group.IsPublic ? Color.Success : Color.Default)">
+                    @(_group.IsPublic ? "Veřejná" : "Soukromá")
+                </MudChip>
+                <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                    @_group.SourceLangName ↔ @_group.TargetLangName
+                </MudChip>
+                <MudText Typo="Typo.caption" Class="ml-2">Autor: @_group.OwnerDisplayName</MudText>
+            }
+        </MudItem>
+
+        <MudItem xs="12">
+            @if (_group.IsOwner)
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           OnClick="@(() => _showAddEntry = true)" StartIcon="@Icons.Material.Filled.Add" Class="mr-2">
+                    Přidat slovíčko
+                </MudButton>
+            }
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="@($"/training/setup?groupId={Id}")">
+                Trénink této skupiny
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+
+    @if (_showAddEntry)
+    {
+        <MudCard Class="mt-4 mb-4">
+            <MudCardContent>
+                <MudText Typo="Typo.h6" Class="mb-2">Nové slovíčko</MudText>
+                <MudGrid>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField @bind-Value="_newSourceText" Label="@_group.SourceLangName" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField @bind-Value="_newTargetText" Label="@_group.TargetLangName" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField @bind-Value="_newNotes" Label="Poznámky" Variant="Variant.Outlined" />
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="AddEntryAsync">Přidat</MudButton>
+                <MudButton OnClick="@(() => _showAddEntry = false)">Zrušit</MudButton>
+            </MudCardActions>
+        </MudCard>
+    }
+
+    <MudTable Items="_entries" Hover="true" Striped="true" Class="mt-4">
+        <HeaderContent>
+            <MudTh>@_group.SourceLangName</MudTh>
+            <MudTh>@_group.TargetLangName</MudTh>
+            <MudTh>Poznámky</MudTh>
+            <MudTh>Tagy</MudTh>
+            @if (_group.IsOwner) { <MudTh>Akce</MudTh> }
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.SourceText</MudTd>
+            <MudTd>@context.TargetText</MudTd>
+            <MudTd>@context.Notes</MudTd>
+            <MudTd>
+                @foreach (var tag in context.Tags)
+                {
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@tag.Name</MudChip>
+                }
+            </MudTd>
+            @if (_group.IsOwner)
+            {
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditEntryAsync(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(() => RemoveEntryAsync(context.Id))" Color="Color.Error" />
+                </MudTd>
+            }
+        </RowTemplate>
+        <NoRecordsContent><MudText>Žádná slovíčka. Přidejte první!</MudText></NoRecordsContent>
+    </MudTable>
+}
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private GroupDto? _group;
+    private List<DictionaryEntryDto> _entries = [];
+    private bool _loading = true;
+    private bool _showAddEntry;
+    private string _newSourceText = "", _newTargetText = "";
+    private string? _newNotes;
+    private MudForm _form = default!;
+    private bool _editing, _saving;
+    private string _editName = "";
+    private string? _editDescription;
+    private bool _editIsPublic;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _group = await GroupService.GetGroupAsync(Id);
+        if (_group != null) _entries = await WordService.GetEntriesByGroupAsync(Id);
+        _loading = false;
+    }
+
+    private void StartEdit() { _editName = _group!.Name; _editDescription = _group.Description; _editIsPublic = _group.IsPublic; _editing = true; }
+    private void CancelEdit() => _editing = false;
+
+    private async Task SaveEditAsync()
+    {
+        await _form.Validate(); if (!_form.IsValid) return;
+        _saving = true;
+        var result = await GroupService.UpdateGroupAsync(Id, new UpdateGroupDto(_editName, _editDescription, _editIsPublic));
+        if (result != null) { _group = result; _editing = false; Snackbar.Add("Skupina upravena!", Severity.Success); }
+        else Snackbar.Add("Chyba při ukládání.", Severity.Error);
+        _saving = false;
+    }
+
+    private async Task DeleteGroupAsync()
+    {
+        var result = await DialogService.ShowMessageBox("Smazat skupinu", "Opravdu chcete smazat tuto skupinu?", yesText: "Smazat", cancelText: "Zrušit");
+        if (result == true)
+        {
+            if (await GroupService.DeleteGroupAsync(Id)) { Snackbar.Add("Skupina smazána.", Severity.Success); Navigation.NavigateTo("/groups"); }
+            else Snackbar.Add("Chyba při mazání skupiny.", Severity.Error);
+        }
+    }
+
+    private async Task AddEntryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newSourceText) || string.IsNullOrWhiteSpace(_newTargetText) || _group == null) return;
+        var entry = await WordService.AddEntryAsync(_group.DictionaryId, new CreateEntryDto(_newSourceText, _newTargetText, _newNotes), Id);
+        if (entry != null) { _entries.Add(entry); _newSourceText = ""; _newTargetText = ""; _newNotes = null; _showAddEntry = false; Snackbar.Add("Slovíčko přidáno!", Severity.Success); }
+    }
+
+    private async Task EditEntryAsync(DictionaryEntryDto entry)
+    {
+        var parameters = new DialogParameters<EditEntryDialog> { { x => x.Entry, entry } };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditEntryDialog>("Upravit slovíčko", parameters, options);
+        var result = await dialog.Result;
+        if (!result!.Canceled) { var updated = (DictionaryEntryDto)result.Data!; var idx = _entries.FindIndex(e => e.Id == entry.Id); if (idx >= 0) _entries[idx] = updated; Snackbar.Add("Slovíčko upraveno!", Severity.Success); }
+    }
+
+    private async Task RemoveEntryAsync(long entryId)
+    {
+        var result = await DialogService.ShowMessageBox("Smazat slovíčko", "Opravdu?", yesText: "Smazat", cancelText: "Zrušit");
+        if (result == true && await WordService.RemoveEntryAsync(entryId)) { _entries.RemoveAll(e => e.Id == entryId); Snackbar.Add("Slovíčko smazáno.", Severity.Success); }
+    }
+}

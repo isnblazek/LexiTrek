@@ -9,28 +9,29 @@ public class WordApiService
 
     public WordApiService(HttpClient http) => _http = http;
 
-    public async Task<List<WordDto>> GetWordsAsync(Guid groupId)
-        => await _http.GetFromJsonAsync<List<WordDto>>($"api/groups/{groupId}/words") ?? [];
+    public async Task<List<DictionaryEntryDto>> GetEntriesAsync(long dictionaryId)
+        => await _http.GetFromJsonAsync<List<DictionaryEntryDto>>($"api/dictionaries/{dictionaryId}/entries") ?? [];
 
-    public async Task<WordDto?> CreateWordAsync(Guid groupId, CreateWordDto dto)
+    public async Task<List<DictionaryEntryDto>> GetEntriesByGroupAsync(long groupId)
+        => await _http.GetFromJsonAsync<List<DictionaryEntryDto>>($"api/groups/{groupId}/entries") ?? [];
+
+    public async Task<DictionaryEntryDto?> AddEntryAsync(long dictionaryId, CreateEntryDto dto, long? groupId = null)
     {
-        var response = await _http.PostAsJsonAsync($"api/groups/{groupId}/words", dto);
-        return response.IsSuccessStatusCode
-            ? await response.Content.ReadFromJsonAsync<WordDto>()
-            : null;
+        var url = $"api/dictionaries/{dictionaryId}/entries";
+        if (groupId.HasValue) url += $"?groupId={groupId}";
+        var response = await _http.PostAsJsonAsync(url, dto);
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<DictionaryEntryDto>() : null;
     }
 
-    public async Task<WordDto?> UpdateWordAsync(Guid wordId, UpdateWordDto dto)
+    public async Task<DictionaryEntryDto?> UpdateEntryAsync(long entryId, UpdateEntryDto dto)
     {
-        var response = await _http.PutAsJsonAsync($"api/words/{wordId}", dto);
-        return response.IsSuccessStatusCode
-            ? await response.Content.ReadFromJsonAsync<WordDto>()
-            : null;
+        var response = await _http.PutAsJsonAsync($"api/entries/{entryId}", dto);
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<DictionaryEntryDto>() : null;
     }
 
-    public async Task<bool> DeleteWordAsync(Guid wordId)
+    public async Task<bool> RemoveEntryAsync(long entryId)
     {
-        var response = await _http.DeleteAsync($"api/words/{wordId}");
+        var response = await _http.DeleteAsync($"api/entries/{entryId}");
         return response.IsSuccessStatusCode;
     }
 }

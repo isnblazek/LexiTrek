@@ -100,43 +100,20 @@ namespace LexiTrek.Infrastructure.Migrations
 
             modelBuilder.Entity("LexiTrek.Domain.Entities.Dictionary", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("OwnerId")
-                        .HasColumnType("text");
-
-                    b.Property<int>("SourceLanguage")
+                    b.Property<int>("SourceLangId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("TargetLanguage")
+                    b.Property<int>("TargetLangId")
                         .HasColumnType("integer");
-
-                    b.Property<int>("Visibility")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
-
-                    b.ToTable("Dictionaries");
-                });
-
-            modelBuilder.Entity("LexiTrek.Domain.Entities.GroupSubscription", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("GroupId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("SubscribedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -144,19 +121,178 @@ namespace LexiTrek.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("SourceLangId");
 
-                    b.HasIndex("UserId", "GroupId")
+                    b.HasIndex("TargetLangId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Dictionaries");
+                });
+
+            modelBuilder.Entity("LexiTrek.Domain.Entities.DictionaryEntry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("DictionaryId")
+                        .HasColumnType("bigint");
+
+                    b.PrimitiveCollection<long[]>("GroupIds")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint[]")
+                        .HasDefaultValueSql("'{}'");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<long>("WordPairId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id", "DictionaryId");
+
+                    b.HasIndex("GroupIds");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("GroupIds"), "gin");
+
+                    b.HasIndex("WordPairId");
+
+                    b.HasIndex("DictionaryId", "WordPairId")
                         .IsUnique();
 
-                    b.ToTable("GroupSubscriptions");
+                    b.ToTable("DictionaryEntries");
+                });
+
+            modelBuilder.Entity("LexiTrek.Domain.Entities.DictionaryEntryTag", b =>
+                {
+                    b.Property<long>("DictionaryEntryId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("DictionaryId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("TagId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("DictionaryEntryId", "DictionaryId", "TagId");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("DictionaryEntryTags");
+                });
+
+            modelBuilder.Entity("LexiTrek.Domain.Entities.Language", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Languages");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "cs",
+                            Name = "Čeština"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = "en",
+                            Name = "Angličtina"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Code = "de",
+                            Name = "Němčina"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Code = "fr",
+                            Name = "Francouzština"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Code = "es",
+                            Name = "Španělština"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Code = "it",
+                            Name = "Italština"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Code = "pl",
+                            Name = "Polština"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Code = "sk",
+                            Name = "Slovenština"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Code = "ru",
+                            Name = "Ruština"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Code = "pt",
+                            Name = "Portugalština"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Code = "nl",
+                            Name = "Holandština"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Code = "uk",
+                            Name = "Ukrajinština"
+                        });
                 });
 
             modelBuilder.Entity("LexiTrek.Domain.Entities.Tag", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -180,9 +316,11 @@ namespace LexiTrek.Infrastructure.Migrations
 
             modelBuilder.Entity("LexiTrek.Domain.Entities.TrainingResult", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("AnsweredAt")
                         .HasColumnType("timestamp with time zone");
@@ -190,26 +328,28 @@ namespace LexiTrek.Infrastructure.Migrations
                     b.Property<int>("Result")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("SessionId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("SessionId")
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("WordId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("WordPairId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
                     b.HasIndex("SessionId");
 
-                    b.HasIndex("WordId");
+                    b.HasIndex("WordPairId");
 
                     b.ToTable("TrainingResults");
                 });
 
             modelBuilder.Entity("LexiTrek.Domain.Entities.TrainingSession", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<Guid>("ClientSessionId")
                         .HasColumnType("uuid");
@@ -217,8 +357,8 @@ namespace LexiTrek.Infrastructure.Migrations
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("GroupId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("GroupId")
+                        .HasColumnType("bigint");
 
                     b.Property<bool>("IsCompleted")
                         .HasColumnType("boolean");
@@ -229,8 +369,8 @@ namespace LexiTrek.Infrastructure.Migrations
                     b.Property<DateTime>("StartedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("TagId")
-                        .HasColumnType("uuid");
+                    b.Property<long?>("TagId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -249,47 +389,79 @@ namespace LexiTrek.Infrastructure.Migrations
                     b.ToTable("TrainingSessions");
                 });
 
+            modelBuilder.Entity("LexiTrek.Domain.Entities.UserWordProgress", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<long>("WordPairId")
+                        .HasColumnType("bigint");
+
+                    b.Property<double>("EaseFactor")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("double precision")
+                        .HasDefaultValue(2.5);
+
+                    b.Property<int>("IntervalDays")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
+                    b.Property<DateTime?>("LastReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("NextReview")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Repetitions")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.HasKey("UserId", "WordPairId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WordPairId");
+
+                    b.HasIndex("UserId", "NextReview");
+
+                    b.ToTable("UserWordProgresses");
+                });
+
             modelBuilder.Entity("LexiTrek.Domain.Entities.Word", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("bigint");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("Definition")
+                    b.Property<int>("LanguageId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
-
-                    b.Property<Guid>("GroupId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("Term")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("LanguageId");
+
+                    b.HasIndex("Text", "LanguageId")
+                        .IsUnique();
 
                     b.ToTable("Words");
                 });
 
             modelBuilder.Entity("LexiTrek.Domain.Entities.WordGroup", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -298,8 +470,11 @@ namespace LexiTrek.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<Guid>("DictionaryId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("DictionaryId")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -310,76 +485,47 @@ namespace LexiTrek.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<long?>("SourceGroupId")
+                        .HasColumnType("bigint");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Visibility")
-                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.HasIndex("DictionaryId");
 
+                    b.HasIndex("IsPublic");
+
                     b.HasIndex("OwnerId");
 
-                    b.HasIndex("Visibility");
+                    b.HasIndex("SourceGroupId");
 
                     b.ToTable("WordGroups");
                 });
 
-            modelBuilder.Entity("LexiTrek.Domain.Entities.WordProgress", b =>
+            modelBuilder.Entity("LexiTrek.Domain.Entities.WordPair", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("bigint");
 
-                    b.Property<double>("EaseFactor")
-                        .HasColumnType("double precision");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
-                    b.Property<int>("IntervalDays")
-                        .HasColumnType("integer");
+                    b.Property<long>("SourceWordId")
+                        .HasColumnType("bigint");
 
-                    b.Property<DateTime?>("LastReviewedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateOnly>("NextReviewDate")
-                        .HasColumnType("date");
-
-                    b.Property<int>("RepetitionCount")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("WordId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("TargetWordId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("NextReviewDate");
+                    b.HasIndex("TargetWordId");
 
-                    b.HasIndex("WordId");
-
-                    b.HasIndex("UserId", "WordId")
+                    b.HasIndex("SourceWordId", "TargetWordId")
                         .IsUnique();
 
-                    b.ToTable("WordProgresses");
-                });
-
-            modelBuilder.Entity("LexiTrek.Domain.Entities.WordTag", b =>
-                {
-                    b.Property<Guid>("WordId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TagId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("WordId", "TagId");
-
-                    b.HasIndex("TagId");
-
-                    b.ToTable("WordTags");
+                    b.ToTable("WordPairs");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -516,31 +662,67 @@ namespace LexiTrek.Infrastructure.Migrations
 
             modelBuilder.Entity("LexiTrek.Domain.Entities.Dictionary", b =>
                 {
-                    b.HasOne("LexiTrek.Domain.Entities.AppUser", "Owner")
-                        .WithMany("Dictionaries")
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                    b.HasOne("LexiTrek.Domain.Entities.Language", "SourceLang")
+                        .WithMany()
+                        .HasForeignKey("SourceLangId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
-                    b.Navigation("Owner");
-                });
-
-            modelBuilder.Entity("LexiTrek.Domain.Entities.GroupSubscription", b =>
-                {
-                    b.HasOne("LexiTrek.Domain.Entities.WordGroup", "Group")
-                        .WithMany("Subscribers")
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("LexiTrek.Domain.Entities.Language", "TargetLang")
+                        .WithMany()
+                        .HasForeignKey("TargetLangId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("LexiTrek.Domain.Entities.AppUser", "User")
-                        .WithMany("Subscriptions")
+                        .WithMany("Dictionaries")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Group");
+                    b.Navigation("SourceLang");
+
+                    b.Navigation("TargetLang");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LexiTrek.Domain.Entities.DictionaryEntry", b =>
+                {
+                    b.HasOne("LexiTrek.Domain.Entities.Dictionary", "Dictionary")
+                        .WithMany("Entries")
+                        .HasForeignKey("DictionaryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LexiTrek.Domain.Entities.WordPair", "WordPair")
+                        .WithMany()
+                        .HasForeignKey("WordPairId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Dictionary");
+
+                    b.Navigation("WordPair");
+                });
+
+            modelBuilder.Entity("LexiTrek.Domain.Entities.DictionaryEntryTag", b =>
+                {
+                    b.HasOne("LexiTrek.Domain.Entities.Tag", "Tag")
+                        .WithMany("EntryTags")
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LexiTrek.Domain.Entities.DictionaryEntry", "Entry")
+                        .WithMany("Tags")
+                        .HasForeignKey("DictionaryEntryId", "DictionaryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Entry");
+
+                    b.Navigation("Tag");
                 });
 
             modelBuilder.Entity("LexiTrek.Domain.Entities.Tag", b =>
@@ -562,15 +744,15 @@ namespace LexiTrek.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("LexiTrek.Domain.Entities.Word", "Word")
+                    b.HasOne("LexiTrek.Domain.Entities.WordPair", "WordPair")
                         .WithMany()
-                        .HasForeignKey("WordId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("WordPairId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Session");
 
-                    b.Navigation("Word");
+                    b.Navigation("WordPair");
                 });
 
             modelBuilder.Entity("LexiTrek.Domain.Entities.TrainingSession", b =>
@@ -598,21 +780,40 @@ namespace LexiTrek.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("LexiTrek.Domain.Entities.Word", b =>
+            modelBuilder.Entity("LexiTrek.Domain.Entities.UserWordProgress", b =>
                 {
-                    b.HasOne("LexiTrek.Domain.Entities.WordGroup", "Group")
-                        .WithMany("Words")
-                        .HasForeignKey("GroupId")
+                    b.HasOne("LexiTrek.Domain.Entities.AppUser", "User")
+                        .WithMany("UserWordProgresses")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Group");
+                    b.HasOne("LexiTrek.Domain.Entities.WordPair", "WordPair")
+                        .WithMany()
+                        .HasForeignKey("WordPairId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("WordPair");
+                });
+
+            modelBuilder.Entity("LexiTrek.Domain.Entities.Word", b =>
+                {
+                    b.HasOne("LexiTrek.Domain.Entities.Language", "Language")
+                        .WithMany()
+                        .HasForeignKey("LanguageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Language");
                 });
 
             modelBuilder.Entity("LexiTrek.Domain.Entities.WordGroup", b =>
                 {
                     b.HasOne("LexiTrek.Domain.Entities.Dictionary", "Dictionary")
-                        .WithMany("WordGroups")
+                        .WithMany("Groups")
                         .HasForeignKey("DictionaryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -623,47 +824,35 @@ namespace LexiTrek.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("LexiTrek.Domain.Entities.WordGroup", "SourceGroup")
+                        .WithMany()
+                        .HasForeignKey("SourceGroupId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Dictionary");
 
                     b.Navigation("Owner");
+
+                    b.Navigation("SourceGroup");
                 });
 
-            modelBuilder.Entity("LexiTrek.Domain.Entities.WordProgress", b =>
+            modelBuilder.Entity("LexiTrek.Domain.Entities.WordPair", b =>
                 {
-                    b.HasOne("LexiTrek.Domain.Entities.AppUser", "User")
-                        .WithMany("WordProgresses")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LexiTrek.Domain.Entities.Word", "Word")
+                    b.HasOne("LexiTrek.Domain.Entities.Word", "SourceWord")
                         .WithMany()
-                        .HasForeignKey("WordId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("SourceWordId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("User");
-
-                    b.Navigation("Word");
-                });
-
-            modelBuilder.Entity("LexiTrek.Domain.Entities.WordTag", b =>
-                {
-                    b.HasOne("LexiTrek.Domain.Entities.Tag", "Tag")
-                        .WithMany("WordTags")
-                        .HasForeignKey("TagId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("LexiTrek.Domain.Entities.Word", "TargetWord")
+                        .WithMany()
+                        .HasForeignKey("TargetWordId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("LexiTrek.Domain.Entities.Word", "Word")
-                        .WithMany("WordTags")
-                        .HasForeignKey("WordId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("SourceWord");
 
-                    b.Navigation("Tag");
-
-                    b.Navigation("Word");
+                    b.Navigation("TargetWord");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -723,40 +912,33 @@ namespace LexiTrek.Infrastructure.Migrations
 
                     b.Navigation("OwnedGroups");
 
-                    b.Navigation("Subscriptions");
-
                     b.Navigation("Tags");
 
                     b.Navigation("TrainingSessions");
 
-                    b.Navigation("WordProgresses");
+                    b.Navigation("UserWordProgresses");
                 });
 
             modelBuilder.Entity("LexiTrek.Domain.Entities.Dictionary", b =>
                 {
-                    b.Navigation("WordGroups");
+                    b.Navigation("Entries");
+
+                    b.Navigation("Groups");
+                });
+
+            modelBuilder.Entity("LexiTrek.Domain.Entities.DictionaryEntry", b =>
+                {
+                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("LexiTrek.Domain.Entities.Tag", b =>
                 {
-                    b.Navigation("WordTags");
+                    b.Navigation("EntryTags");
                 });
 
             modelBuilder.Entity("LexiTrek.Domain.Entities.TrainingSession", b =>
                 {
                     b.Navigation("Results");
-                });
-
-            modelBuilder.Entity("LexiTrek.Domain.Entities.Word", b =>
-                {
-                    b.Navigation("WordTags");
-                });
-
-            modelBuilder.Entity("LexiTrek.Domain.Entities.WordGroup", b =>
-                {
-                    b.Navigation("Subscribers");
-
-                    b.Navigation("Words");
                 });
 #pragma warning restore 612, 618
         }

@@ -5,7 +5,7 @@ namespace LexiTrek.Application.Services;
 
 public static class SpacedRepetitionService
 {
-    public static void UpdateProgress(WordProgress progress, TrainingResultType result)
+    public static void UpdateProgress(UserWordProgress progress, TrainingResultType result)
     {
         var quality = result switch
         {
@@ -17,16 +17,16 @@ public static class SpacedRepetitionService
 
         if (quality < 3)
         {
-            progress.RepetitionCount = 0;
+            progress.Repetitions = 0;
             progress.IntervalDays = 1;
             progress.EaseFactor = Math.Max(1.3, progress.EaseFactor - 0.2);
         }
         else
         {
-            progress.RepetitionCount++;
-            if (progress.RepetitionCount == 1)
+            progress.Repetitions++;
+            if (progress.Repetitions == 1)
                 progress.IntervalDays = 1;
-            else if (progress.RepetitionCount == 2)
+            else if (progress.Repetitions == 2)
                 progress.IntervalDays = 6;
             else
                 progress.IntervalDays = (int)Math.Round(progress.IntervalDays * progress.EaseFactor);
@@ -35,7 +35,7 @@ public static class SpacedRepetitionService
                 progress.EaseFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
         }
 
-        progress.NextReviewDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(progress.IntervalDays);
+        progress.NextReview = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(progress.IntervalDays);
         progress.LastReviewedAt = DateTime.UtcNow;
     }
 }

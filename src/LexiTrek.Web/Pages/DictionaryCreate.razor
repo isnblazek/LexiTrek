@@ -1,0 +1,55 @@
+@page "/groups/create"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject GroupApiService GroupService
+@inject DictionaryStateService DictState
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Nová skupina - LexiTrek</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small">
+    <MudText Typo="Typo.h4" Class="mb-4">Nová skupina</MudText>
+
+    <MudCard>
+        <MudCardContent>
+            <MudTextField @bind-Value="_name" Label="Název" Variant="Variant.Outlined" Class="mb-3" Required="true" />
+            <MudTextField @bind-Value="_description" Label="Popis" Variant="Variant.Outlined" Class="mb-3" Lines="3" />
+            <MudSelect @bind-Value="_selectedDictId" Label="Slovník" Variant="Variant.Outlined" Class="mb-3"
+                       Required="true" ToStringFunc="@(id => DictState.Dictionaries.FirstOrDefault(d => d.Id == id) is {} d ? $"{d.SourceLangName} ↔ {d.TargetLangName}" : "")">
+                @foreach (var dict in DictState.Dictionaries)
+                {
+                    <MudSelectItem Value="dict.Id">@dict.SourceLangName ↔ @dict.TargetLangName</MudSelectItem>
+                }
+            </MudSelect>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreate" Disabled="_loading">Vytvořit</MudButton>
+            <MudButton Variant="Variant.Text" Href="/groups">Zrušit</MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
+
+@code {
+    private string _name = "";
+    private string? _description;
+    private long _selectedDictId;
+    private bool _loading;
+
+    protected override void OnInitialized()
+    {
+        if (DictState.SelectedDictionaryId.HasValue)
+            _selectedDictId = DictState.SelectedDictionaryId.Value;
+        else if (DictState.Dictionaries.Any())
+            _selectedDictId = DictState.Dictionaries.First().Id;
+    }
+
+    private async Task HandleCreate()
+    {
+        if (string.IsNullOrWhiteSpace(_name) || _selectedDictId == 0) return;
+        _loading = true;
+        var result = await GroupService.CreateGroupAsync(new CreateGroupDto(_name, _description, _selectedDictId));
+        if (result != null) { Snackbar.Add("Skupina vytvořena!", Severity.Success); Navigation.NavigateTo($"/groups/{result.Id}"); }
+        else Snackbar.Add("Chyba při vytváření skupiny.", Severity.Error);
+        _loading = false;
+    }
+}

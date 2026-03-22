@@ -4,11 +4,11 @@ namespace LexiTrek.Domain.Entities;
 
 public class TrainingSession
 {
-    public Guid Id { get; set; }
+    public long Id { get; set; }
     public string UserId { get; set; } = string.Empty;
     public TrainingMode Mode { get; set; }
-    public Guid? GroupId { get; set; }
-    public Guid? TagId { get; set; }
+    public long? GroupId { get; set; }
+    public long? TagId { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
     public bool IsCompleted { get; set; }

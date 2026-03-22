@@ -1,6 +1,5 @@
 using LexiTrek.Application.Interfaces;
 using LexiTrek.Domain.Entities;
-using LexiTrek.Domain.Enums;
 using LexiTrek.Infrastructure.Data;
 using LexiTrek.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -13,88 +12,146 @@ public class WordService : IWordService
 
     public WordService(AppDbContext db) => _db = db;
 
-    public async Task<List<WordDto>> GetWordsAsync(Guid groupId, string userId)
+    public async Task<List<DictionaryEntryDto>> GetEntriesAsync(long dictionaryId, string userId)
     {
-        var group = await _db.WordGroups.FindAsync(groupId)
-            ?? throw new KeyNotFoundException("Group not found");
+        var dict = await _db.Dictionaries.FindAsync(dictionaryId)
+            ?? throw new KeyNotFoundException("Slovník nenalezen");
 
-        if (group.Visibility == Visibility.Private && group.OwnerId != userId)
-        {
-            var isSubscribed = await _db.GroupSubscriptions
-                .AnyAsync(s => s.GroupId == groupId && s.UserId == userId);
-            if (!isSubscribed)
-                throw new UnauthorizedAccessException("Access denied");
-        }
+        if (dict.UserId != userId)
+            throw new UnauthorizedAccessException("Přístup zamítnut");
 
-        return await _db.Words
-            .Where(w => w.GroupId == groupId)
-            .Select(w => new WordDto(
-                w.Id, w.GroupId, w.Term, w.Definition, w.Notes,
-                w.WordTags.Select(wt => new TagDto(wt.Tag.Id, wt.Tag.Name)).ToList(),
-                w.CreatedAt, w.UpdatedAt))
+        return await BuildEntryQuery(_db.DictionaryEntries.Where(e => e.DictionaryId == dictionaryId && e.IsActive))
             .ToListAsync();
     }
 
-    public async Task<WordDto> CreateWordAsync(Guid groupId, CreateWordDto dto, string userId)
+    public async Task<List<DictionaryEntryDto>> GetEntriesByGroupAsync(long groupId, string userId)
     {
         var group = await _db.WordGroups.FindAsync(groupId)
-            ?? throw new KeyNotFoundException("Group not found");
+            ?? throw new KeyNotFoundException("Skupina nenalezena");
 
-        if (group.OwnerId != userId)
-            throw new UnauthorizedAccessException("Only the owner can add words");
+        if (!group.IsPublic && group.OwnerId != userId)
+            throw new UnauthorizedAccessException("Přístup zamítnut");
 
-        var word = new Word
+        return await BuildEntryQuery(_db.DictionaryEntries.Where(e => e.GroupIds.Contains(groupId) && e.IsActive))
+            .ToListAsync();
+    }
+
+    public async Task<DictionaryEntryDto> AddEntryAsync(long dictionaryId, CreateEntryDto dto, string userId, long? groupId = null)
+    {
+        var dict = await _db.Dictionaries.FindAsync(dictionaryId)
+            ?? throw new KeyNotFoundException("Slovník nenalezen");
+
+        if (dict.UserId != userId)
+            throw new UnauthorizedAccessException("Pouze vlastník může přidávat slovíčka");
+
+        var sourceWord = await FindOrCreateWordAsync(dto.SourceText, dict.SourceLangId);
+        var targetWord = await FindOrCreateWordAsync(dto.TargetText, dict.TargetLangId);
+        var wordPair = await FindOrCreateWordPairAsync(sourceWord.Id, targetWord.Id);
+
+        var existing = await _db.DictionaryEntries
+            .FirstOrDefaultAsync(e => e.DictionaryId == dictionaryId && e.WordPairId == wordPair.Id);
+
+        if (existing != null)
         {
-            Id = Guid.NewGuid(),
-            GroupId = groupId,
-            Term = dto.Term,
-            Definition = dto.Definition,
+            if (!existing.IsActive)
+            {
+                existing.IsActive = true;
+                existing.Notes = dto.Notes;
+            }
+
+            if (groupId.HasValue && !existing.GroupIds.Contains(groupId.Value))
+                existing.GroupIds = [.. existing.GroupIds, groupId.Value];
+
+            await _db.SaveChangesAsync();
+            return await GetEntryDtoAsync(existing.Id, dictionaryId);
+        }
+
+        var entry = new DictionaryEntry
+        {
+            DictionaryId = dictionaryId,
+            WordPairId = wordPair.Id,
+            IsActive = true,
             Notes = dto.Notes,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            GroupIds = groupId.HasValue ? [groupId.Value] : []
         };
 
+        _db.DictionaryEntries.Add(entry);
+        await _db.SaveChangesAsync();
+
+        return await GetEntryDtoAsync(entry.Id, dictionaryId);
+    }
+
+    public async Task<DictionaryEntryDto> UpdateEntryAsync(long entryId, UpdateEntryDto dto, string userId)
+    {
+        var entry = await _db.DictionaryEntries
+            .Include(e => e.Dictionary)
+            .FirstOrDefaultAsync(e => e.Id == entryId)
+            ?? throw new KeyNotFoundException("Záznam nenalezen");
+
+        if (entry.Dictionary.UserId != userId)
+            throw new UnauthorizedAccessException("Pouze vlastník může upravovat slovíčka");
+
+        var sourceWord = await FindOrCreateWordAsync(dto.SourceText, entry.Dictionary.SourceLangId);
+        var targetWord = await FindOrCreateWordAsync(dto.TargetText, entry.Dictionary.TargetLangId);
+        var wordPair = await FindOrCreateWordPairAsync(sourceWord.Id, targetWord.Id);
+
+        entry.WordPairId = wordPair.Id;
+        entry.Notes = dto.Notes;
+        await _db.SaveChangesAsync();
+
+        return await GetEntryDtoAsync(entry.Id, entry.DictionaryId);
+    }
+
+    public async Task RemoveEntryAsync(long entryId, string userId)
+    {
+        var entry = await _db.DictionaryEntries
+            .Include(e => e.Dictionary)
+            .FirstOrDefaultAsync(e => e.Id == entryId)
+            ?? throw new KeyNotFoundException("Záznam nenalezen");
+
+        if (entry.Dictionary.UserId != userId)
+            throw new UnauthorizedAccessException("Pouze vlastník může mazat slovíčka");
+
+        entry.IsActive = false;
+        await _db.SaveChangesAsync();
+    }
+
+    private async Task<Word> FindOrCreateWordAsync(string text, int languageId)
+    {
+        var word = await _db.Words.FirstOrDefaultAsync(w => w.Text == text && w.LanguageId == languageId);
+        if (word != null) return word;
+        word = new Word { Text = text, LanguageId = languageId };
         _db.Words.Add(word);
         await _db.SaveChangesAsync();
-
-        return new WordDto(word.Id, word.GroupId, word.Term, word.Definition, word.Notes, [], word.CreatedAt, word.UpdatedAt);
+        return word;
     }
 
-    public async Task<WordDto> UpdateWordAsync(Guid wordId, UpdateWordDto dto, string userId)
+    private async Task<WordPair> FindOrCreateWordPairAsync(long sourceWordId, long targetWordId)
     {
-        var word = await _db.Words
-            .Include(w => w.Group)
-            .Include(w => w.WordTags).ThenInclude(wt => wt.Tag)
-            .FirstOrDefaultAsync(w => w.Id == wordId)
-            ?? throw new KeyNotFoundException("Word not found");
-
-        if (word.Group.OwnerId != userId)
-            throw new UnauthorizedAccessException("Only the group owner can update words");
-
-        word.Term = dto.Term;
-        word.Definition = dto.Definition;
-        word.Notes = dto.Notes;
-        word.UpdatedAt = DateTime.UtcNow;
-
+        var pair = await _db.WordPairs.FirstOrDefaultAsync(wp => wp.SourceWordId == sourceWordId && wp.TargetWordId == targetWordId);
+        if (pair != null) return pair;
+        pair = new WordPair { SourceWordId = sourceWordId, TargetWordId = targetWordId };
+        _db.WordPairs.Add(pair);
         await _db.SaveChangesAsync();
-
-        return new WordDto(
-            word.Id, word.GroupId, word.Term, word.Definition, word.Notes,
-            word.WordTags.Select(wt => new TagDto(wt.Tag.Id, wt.Tag.Name)).ToList(),
-            word.CreatedAt, word.UpdatedAt);
+        return pair;
     }
 
-    public async Task DeleteWordAsync(Guid wordId, string userId)
+    private static IQueryable<DictionaryEntryDto> BuildEntryQuery(IQueryable<DictionaryEntry> query)
     {
-        var word = await _db.Words
-            .Include(w => w.Group)
-            .FirstOrDefaultAsync(w => w.Id == wordId)
-            ?? throw new KeyNotFoundException("Word not found");
+        return query
+            .Include(e => e.WordPair).ThenInclude(wp => wp.SourceWord)
+            .Include(e => e.WordPair).ThenInclude(wp => wp.TargetWord)
+            .Include(e => e.Tags).ThenInclude(et => et.Tag)
+            .Select(e => new DictionaryEntryDto(
+                e.Id, e.WordPairId,
+                e.WordPair.SourceWord.Text, e.WordPair.TargetWord.Text,
+                e.Notes, e.IsActive,
+                e.Tags.Select(et => new TagDto(et.Tag.Id, et.Tag.Name)).ToList()));
+    }
 
-        if (word.Group.OwnerId != userId)
-            throw new UnauthorizedAccessException("Only the group owner can delete words");
-
-        _db.Words.Remove(word);
-        await _db.SaveChangesAsync();
+    private async Task<DictionaryEntryDto> GetEntryDtoAsync(long entryId, long dictionaryId)
+    {
+        return await BuildEntryQuery(_db.DictionaryEntries.Where(e => e.Id == entryId && e.DictionaryId == dictionaryId))
+            .FirstAsync();
     }
 }

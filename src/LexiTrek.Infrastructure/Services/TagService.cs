@@ -13,103 +13,74 @@ public class TagService : ITagService
     public TagService(AppDbContext db) => _db = db;
 
     public async Task<List<TagDto>> GetTagsAsync(string userId)
-    {
-        return await _db.Tags
-            .Where(t => t.OwnerId == userId)
-            .Select(t => new TagDto(t.Id, t.Name))
-            .ToListAsync();
-    }
+        => await _db.Tags.Where(t => t.OwnerId == userId).Select(t => new TagDto(t.Id, t.Name)).ToListAsync();
 
     public async Task<TagDto> CreateTagAsync(CreateTagDto dto, string userId)
     {
-        var exists = await _db.Tags
-            .AnyAsync(t => t.OwnerId == userId && t.Name == dto.Name);
-        if (exists)
-            throw new InvalidOperationException("Tag with this name already exists");
+        if (await _db.Tags.AnyAsync(t => t.OwnerId == userId && t.Name == dto.Name))
+            throw new InvalidOperationException("Tag s tímto názvem již existuje");
 
-        var tag = new Tag
-        {
-            Id = Guid.NewGuid(),
-            Name = dto.Name,
-            OwnerId = userId,
-            CreatedAt = DateTime.UtcNow
-        };
-
+        var tag = new Tag { Name = dto.Name, OwnerId = userId, CreatedAt = DateTime.UtcNow };
         _db.Tags.Add(tag);
         await _db.SaveChangesAsync();
-
         return new TagDto(tag.Id, tag.Name);
     }
 
-    public async Task<TagDto> UpdateTagAsync(Guid id, UpdateTagDto dto, string userId)
+    public async Task<TagDto> UpdateTagAsync(long id, UpdateTagDto dto, string userId)
     {
-        var tag = await _db.Tags.FindAsync(id)
-            ?? throw new KeyNotFoundException("Tag not found");
-
-        if (tag.OwnerId != userId)
-            throw new UnauthorizedAccessException("Access denied");
-
-        var exists = await _db.Tags
-            .AnyAsync(t => t.OwnerId == userId && t.Name == dto.Name && t.Id != id);
-        if (exists)
-            throw new InvalidOperationException("Tag with this name already exists");
+        var tag = await _db.Tags.FindAsync(id) ?? throw new KeyNotFoundException("Tag nenalezen");
+        if (tag.OwnerId != userId) throw new UnauthorizedAccessException("Přístup zamítnut");
+        if (await _db.Tags.AnyAsync(t => t.OwnerId == userId && t.Name == dto.Name && t.Id != id))
+            throw new InvalidOperationException("Tag s tímto názvem již existuje");
 
         tag.Name = dto.Name;
         await _db.SaveChangesAsync();
-
         return new TagDto(tag.Id, tag.Name);
     }
 
-    public async Task DeleteTagAsync(Guid id, string userId)
+    public async Task DeleteTagAsync(long id, string userId)
     {
-        var tag = await _db.Tags.FindAsync(id)
-            ?? throw new KeyNotFoundException("Tag not found");
-
-        if (tag.OwnerId != userId)
-            throw new UnauthorizedAccessException("Access denied");
-
+        var tag = await _db.Tags.FindAsync(id) ?? throw new KeyNotFoundException("Tag nenalezen");
+        if (tag.OwnerId != userId) throw new UnauthorizedAccessException("Přístup zamítnut");
         _db.Tags.Remove(tag);
         await _db.SaveChangesAsync();
     }
 
-    public async Task AssignTagsAsync(Guid wordId, AssignTagsDto dto, string userId)
+    public async Task AssignTagsAsync(long entryId, AssignTagsDto dto, string userId)
     {
-        var word = await _db.Words
-            .Include(w => w.Group)
-            .Include(w => w.WordTags)
-            .FirstOrDefaultAsync(w => w.Id == wordId)
-            ?? throw new KeyNotFoundException("Word not found");
+        var entry = await _db.DictionaryEntries
+            .Include(e => e.Dictionary)
+            .Include(e => e.Tags)
+            .FirstOrDefaultAsync(e => e.Id == entryId)
+            ?? throw new KeyNotFoundException("Záznam nenalezen");
 
-        if (word.Group.OwnerId != userId)
-            throw new UnauthorizedAccessException("Only the group owner can tag words");
+        if (entry.Dictionary.UserId != userId)
+            throw new UnauthorizedAccessException("Pouze vlastník slovníku může přidávat tagy");
 
         var userTags = await _db.Tags
             .Where(t => t.OwnerId == userId && dto.TagIds.Contains(t.Id))
-            .Select(t => t.Id)
-            .ToListAsync();
+            .Select(t => t.Id).ToListAsync();
 
         foreach (var tagId in userTags)
         {
-            if (!word.WordTags.Any(wt => wt.TagId == tagId))
-            {
-                word.WordTags.Add(new WordTag { WordId = wordId, TagId = tagId });
-            }
+            if (!entry.Tags.Any(et => et.TagId == tagId))
+                entry.Tags.Add(new DictionaryEntryTag { DictionaryEntryId = entryId, DictionaryId = entry.DictionaryId, TagId = tagId });
         }
 
         await _db.SaveChangesAsync();
     }
 
-    public async Task RemoveTagAsync(Guid wordId, Guid tagId, string userId)
+    public async Task RemoveTagAsync(long entryId, long tagId, string userId)
     {
-        var wordTag = await _db.WordTags
-            .Include(wt => wt.Word).ThenInclude(w => w.Group)
-            .FirstOrDefaultAsync(wt => wt.WordId == wordId && wt.TagId == tagId)
-            ?? throw new KeyNotFoundException("Tag assignment not found");
+        var entryTag = await _db.DictionaryEntryTags
+            .Include(et => et.Entry).ThenInclude(e => e.Dictionary)
+            .FirstOrDefaultAsync(et => et.DictionaryEntryId == entryId && et.TagId == tagId)
+            ?? throw new KeyNotFoundException("Přiřazení tagu nebylo nalezeno");
 
-        if (wordTag.Word.Group.OwnerId != userId)
-            throw new UnauthorizedAccessException("Access denied");
+        if (entryTag.Entry.Dictionary.UserId != userId)
+            throw new UnauthorizedAccessException("Přístup zamítnut");
 
-        _db.WordTags.Remove(wordTag);
+        _db.DictionaryEntryTags.Remove(entryTag);
         await _db.SaveChangesAsync();
     }
 }

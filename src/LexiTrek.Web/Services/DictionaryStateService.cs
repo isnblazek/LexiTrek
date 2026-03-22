@@ -9,7 +9,7 @@ public class DictionaryStateService
     public DictionaryStateService(DictionaryApiService api) => _api = api;
 
     public List<DictionaryListDto> Dictionaries { get; private set; } = [];
-    public Guid? SelectedDictionaryId { get; private set; }
+    public long? SelectedDictionaryId { get; private set; }
     public DictionaryListDto? SelectedDictionary =>
         Dictionaries.FirstOrDefault(d => d.Id == SelectedDictionaryId);
 
@@ -25,7 +25,7 @@ public class DictionaryStateService
         OnChange?.Invoke();
     }
 
-    public void SetSelectedDictionary(Guid? id)
+    public void SetSelectedDictionary(long? id)
     {
         SelectedDictionaryId = id;
         OnChange?.Invoke();

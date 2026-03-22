@@ -29,6 +29,7 @@ builder.Services.AddScoped<AuthApiService>();
 builder.Services.AddScoped<DictionaryApiService>();
 builder.Services.AddScoped<DictionaryStateService>();
 builder.Services.AddScoped<GroupApiService>();
+builder.Services.AddScoped<LanguageApiService>();
 builder.Services.AddScoped<WordApiService>();
 builder.Services.AddScoped<TagApiService>();
 builder.Services.AddScoped<TrainingApiService>();

@@ -1,6 +1,7 @@
 @page "/settings"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject DictionaryApiService DictionaryService
+@inject LanguageApiService LanguageService
 @inject DictionaryStateService DictState
 @inject ISnackbar Snackbar
 
@@ -15,20 +16,20 @@
         <MudText Typo="Typo.h6" Class="mb-2">Nový slovník</MudText>
         <MudGrid>
             <MudItem xs="12" sm="5">
-                <MudSelect @bind-Value="_sourceLanguage" Label="Zdrojový jazyk" Variant="Variant.Outlined"
-                           ToStringFunc="@(l => l.HasValue ? LanguageHelper.GetLabel(l.Value) : "")">
-                    @foreach (var lang in Enum.GetValues<Language>())
+                <MudSelect @bind-Value="_sourceLangId" Label="Zdrojový jazyk" Variant="Variant.Outlined"
+                           ToStringFunc="@(id => _languages.FirstOrDefault(l => l.Id == id)?.Name ?? "")">
+                    @foreach (var lang in _languages)
                     {
-                        <MudSelectItem T="Language?" Value="@((Language?)lang)">@LanguageHelper.GetLabel(lang)</MudSelectItem>
+                        <MudSelectItem Value="lang.Id">@lang.Code – @lang.Name</MudSelectItem>
                     }
                 </MudSelect>
             </MudItem>
             <MudItem xs="12" sm="5">
-                <MudSelect @bind-Value="_targetLanguage" Label="Cílový jazyk" Variant="Variant.Outlined"
-                           ToStringFunc="@(l => l.HasValue ? LanguageHelper.GetLabel(l.Value) : "")">
-                    @foreach (var lang in Enum.GetValues<Language>())
+                <MudSelect @bind-Value="_targetLangId" Label="Cílový jazyk" Variant="Variant.Outlined"
+                           ToStringFunc="@(id => _languages.FirstOrDefault(l => l.Id == id)?.Name ?? "")">
+                    @foreach (var lang in _languages)
                     {
-                        <MudSelectItem T="Language?" Value="@((Language?)lang)">@LanguageHelper.GetLabel(lang)</MudSelectItem>
+                        <MudSelectItem Value="lang.Id">@lang.Code – @lang.Name</MudSelectItem>
                     }
                 </MudSelect>
             </MudItem>
@@ -57,7 +58,7 @@ else
                 <MudCard>
                     <MudCardContent>
                         <div class="d-flex justify-space-between align-center">
-                            <MudText Typo="Typo.h6">@LanguageHelper.GetDisplayName((Language)dict.SourceLanguage) <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small" /> @LanguageHelper.GetDisplayName((Language)dict.TargetLanguage)</MudText>
+                            <MudText Typo="Typo.h6">@dict.SourceLangName <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small" /> @dict.TargetLangName</MudText>
                             <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
                                            OnClick="@(() => HandleDelete(dict.Id))" />
                         </div>
@@ -71,27 +72,28 @@ else
 @code {
     private bool _loading = true;
     private bool _creating;
-    private Language? _sourceLanguage;
-    private Language? _targetLanguage;
+    private int _sourceLangId;
+    private int _targetLangId;
+    private List<LanguageDto> _languages = [];
 
     protected override async Task OnInitializedAsync()
     {
+        _languages = await LanguageService.GetLanguagesAsync();
         await DictState.LoadAsync();
         _loading = false;
     }
 
     private async Task HandleCreate()
     {
-        if (_sourceLanguage == null || _targetLanguage == null) return;
+        if (_sourceLangId == 0 || _targetLangId == 0) return;
 
         _creating = true;
+
         var result = await DictionaryService.CreateDictionaryAsync(
-            new CreateDictionaryDto((int)_sourceLanguage.Value, (int)_targetLanguage.Value));
+            new CreateDictionaryDto(_sourceLangId, _targetLangId));
 
         if (result != null)
         {
-            _sourceLanguage = null;
-            _targetLanguage = null;
             await DictState.LoadAsync();
             Snackbar.Add("Slovník vytvořen!", Severity.Success);
         }
@@ -103,7 +105,7 @@ else
         _creating = false;
     }
 
-    private async Task HandleDelete(Guid id)
+    private async Task HandleDelete(long id)
     {
         if (await DictionaryService.DeleteDictionaryAsync(id))
         {

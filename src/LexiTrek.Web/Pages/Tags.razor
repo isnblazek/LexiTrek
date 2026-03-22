@@ -64,7 +64,7 @@ else
         }
     }
 
-    private async Task DeleteTagAsync(Guid id)
+    private async Task DeleteTagAsync(long id)
     {
         var result = await DialogService.ShowMessageBox(
             "Smazat tag", "Opravdu chcete smazat tento tag?",

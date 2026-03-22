@@ -18,97 +18,45 @@ public class TagsController : ControllerBase
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
-    public async Task<ActionResult<List<TagDto>>> GetTags()
-    {
-        return Ok(await _tagService.GetTagsAsync(UserId));
-    }
+    public async Task<ActionResult<List<TagDto>>> GetTags() => Ok(await _tagService.GetTagsAsync(UserId));
 
     [HttpPost]
     public async Task<ActionResult<TagDto>> CreateTag(CreateTagDto dto)
     {
-        try
-        {
-            var result = await _tagService.CreateTagAsync(dto, UserId);
-            return Created($"api/tags/{result.Id}", result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        try { return Created("api/tags", await _tagService.CreateTagAsync(dto, UserId)); }
+        catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
-    [HttpPut("{id:guid}")]
-    public async Task<ActionResult<TagDto>> UpdateTag(Guid id, UpdateTagDto dto)
+    [HttpPut("{id:long}")]
+    public async Task<ActionResult<TagDto>> UpdateTag(long id, UpdateTagDto dto)
     {
-        try
-        {
-            return Ok(await _tagService.UpdateTagAsync(id, dto, UserId));
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        try { return Ok(await _tagService.UpdateTagAsync(id, dto, UserId)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
-    [HttpDelete("{id:guid}")]
-    public async Task<ActionResult> DeleteTag(Guid id)
+    [HttpDelete("{id:long}")]
+    public async Task<ActionResult> DeleteTag(long id)
     {
-        try
-        {
-            await _tagService.DeleteTagAsync(id, UserId);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        try { await _tagService.DeleteTagAsync(id, UserId); return NoContent(); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
-    [HttpPost("~/api/words/{wordId:guid}/tags")]
-    public async Task<ActionResult> AssignTags(Guid wordId, AssignTagsDto dto)
+    [HttpPost("~/api/entries/{entryId:long}/tags")]
+    public async Task<ActionResult> AssignTags(long entryId, AssignTagsDto dto)
     {
-        try
-        {
-            await _tagService.AssignTagsAsync(wordId, dto, UserId);
-            return Ok();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        try { await _tagService.AssignTagsAsync(entryId, dto, UserId); return Ok(); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
-    [HttpDelete("~/api/words/{wordId:guid}/tags/{tagId:guid}")]
-    public async Task<ActionResult> RemoveTag(Guid wordId, Guid tagId)
+    [HttpDelete("~/api/entries/{entryId:long}/tags/{tagId:long}")]
+    public async Task<ActionResult> RemoveTag(long entryId, long tagId)
     {
-        try
-        {
-            await _tagService.RemoveTagAsync(wordId, tagId, UserId);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        try { await _tagService.RemoveTagAsync(entryId, tagId, UserId); return NoContent(); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 }

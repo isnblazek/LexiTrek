@@ -19,107 +19,68 @@ public class GroupsController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<List<GroupListDto>>> GetUserGroups()
+        => Ok(await _groupService.GetUserGroupsAsync(UserId));
+
+    [HttpGet("{id:long}")]
+    public async Task<ActionResult<GroupDto>> GetGroup(long id)
     {
-        return Ok(await _groupService.GetUserGroupsAsync(UserId));
+        try { return Ok(await _groupService.GetGroupAsync(id, UserId)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
     [HttpPost]
     public async Task<ActionResult<GroupDto>> CreateGroup(CreateGroupDto dto)
     {
-        var result = await _groupService.CreateGroupAsync(dto, UserId);
-        return CreatedAtAction(nameof(GetGroup), new { id = result.Id }, result);
+        try { var result = await _groupService.CreateGroupAsync(dto, UserId); return CreatedAtAction(nameof(GetGroup), new { id = result.Id }, result); }
+        catch (KeyNotFoundException) { return NotFound(); }
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<GroupDto>> GetGroup(Guid id)
+    [HttpPut("{id:long}")]
+    public async Task<ActionResult<GroupDto>> UpdateGroup(long id, UpdateGroupDto dto)
     {
-        try
-        {
-            return Ok(await _groupService.GetGroupAsync(id, UserId));
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        try { return Ok(await _groupService.UpdateGroupAsync(id, dto, UserId)); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
-    [HttpPut("{id:guid}")]
-    public async Task<ActionResult<GroupDto>> UpdateGroup(Guid id, UpdateGroupDto dto)
+    [HttpDelete("{id:long}")]
+    public async Task<ActionResult> DeleteGroup(long id)
     {
-        try
-        {
-            return Ok(await _groupService.UpdateGroupAsync(id, dto, UserId));
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-    }
-
-    [HttpDelete("{id:guid}")]
-    public async Task<ActionResult> DeleteGroup(Guid id)
-    {
-        try
-        {
-            await _groupService.DeleteGroupAsync(id, UserId);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        try { await _groupService.DeleteGroupAsync(id, UserId); return NoContent(); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
     [HttpGet("public")]
     public async Task<ActionResult<PagedResult<GroupListDto>>> GetPublicGroups(
-        [FromQuery] string? search, [FromQuery] Guid? dictionaryId = null,
+        [FromQuery] string? search, [FromQuery] long? dictionaryId = null,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var request = new PublicGroupsRequest(search, dictionaryId, page, pageSize);
-        return Ok(await _groupService.GetPublicGroupsAsync(request));
+        return Ok(await _groupService.GetPublicGroupsAsync(new PublicGroupsRequest(search, dictionaryId, page, pageSize)));
     }
 
-    [HttpPost("{id:guid}/subscribe")]
-    public async Task<ActionResult> Subscribe(Guid id)
+    [HttpPost("{id:long}/fork")]
+    public async Task<ActionResult<GroupDto>> ForkGroup(long id)
     {
-        try
-        {
-            await _groupService.SubscribeAsync(id, UserId);
-            return Ok();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        try { var result = await _groupService.ForkGroupAsync(id, UserId); return CreatedAtAction(nameof(GetGroup), new { id = result.Id }, result); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
-    [HttpDelete("{id:guid}/subscribe")]
-    public async Task<ActionResult> Unsubscribe(Guid id)
+    [HttpPost("{groupId:long}/entries/{entryId:long}")]
+    public async Task<ActionResult> AddEntryToGroup(long groupId, long entryId)
     {
-        try
-        {
-            await _groupService.UnsubscribeAsync(id, UserId);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        try { await _groupService.AddEntryToGroupAsync(groupId, entryId, UserId); return Ok(); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+    }
+
+    [HttpDelete("{groupId:long}/entries/{entryId:long}")]
+    public async Task<ActionResult> RemoveEntryFromGroup(long groupId, long entryId)
+    {
+        try { await _groupService.RemoveEntryFromGroupAsync(groupId, entryId, UserId); return NoContent(); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 }
