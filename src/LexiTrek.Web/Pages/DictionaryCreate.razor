@@ -7,24 +7,61 @@
 
 <PageTitle>Nová skupina - LexiTrek</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small">
-    <MudText Typo="Typo.h4" Class="mb-4">Nová skupina</MudText>
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
+    <div class="text-center mb-6">
+        <MudIcon Icon="@Icons.Material.Filled.CreateNewFolder" Style="font-size: 48px; color: #4F46E5;" Class="mb-2" />
+        <MudText Typo="Typo.h4" Style="font-weight: 700;">Nová skupina</MudText>
+        @if (DictState.SelectedDictionary != null)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Info" Class="mt-2">
+                @DictState.SelectedDictionary.SourceLangName ↔ @DictState.SelectedDictionary.TargetLangName
+            </MudChip>
+        }
+    </div>
 
-    <MudCard>
-        <MudCardContent>
-            <MudTextField @bind-Value="_name" Label="Název" Variant="Variant.Outlined" Class="mb-3" Required="true" />
-            <MudTextField @bind-Value="_description" Label="Popis" Variant="Variant.Outlined" Class="mb-3" Lines="3" />
-            <MudSelect @bind-Value="_selectedDictId" Label="Slovník" Variant="Variant.Outlined" Class="mb-3"
-                       Required="true" ToStringFunc="@(id => DictState.Dictionaries.FirstOrDefault(d => d.Id == id) is {} d ? $"{d.SourceLangName} ↔ {d.TargetLangName}" : "")">
-                @foreach (var dict in DictState.Dictionaries)
-                {
-                    <MudSelectItem Value="dict.Id">@dict.SourceLangName ↔ @dict.TargetLangName</MudSelectItem>
-                }
-            </MudSelect>
+    <MudCard Elevation="2" Style="border-radius: 16px;">
+        <MudCardContent Class="pa-6">
+            <MudTextField @bind-Value="_name" Label="Název skupiny" Variant="Variant.Outlined" Class="mb-4"
+                          Required="true" Placeholder="např. Jídlo, Cestování, B2 slovíčka…"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Label" />
+
+            <MudTextField @bind-Value="_description" Label="Popis (volitelný)" Variant="Variant.Outlined" Class="mb-6"
+                          Lines="3" Placeholder="Krátký popis, o čem skupina je…" />
+
+            <MudPaper Elevation="0" Class="pa-4" Style="background: #F8FAFC; border-radius: 12px;">
+                <div class="d-flex justify-space-between align-center">
+                    <div>
+                        <div class="d-flex align-center gap-2 mb-1">
+                            <MudIcon Icon="@(_isPublic ? Icons.Material.Filled.Public : Icons.Material.Filled.Lock)"
+                                     Color="@(_isPublic ? Color.Success : Color.Default)" Size="Size.Small" />
+                            <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">
+                                @(_isPublic ? "Veřejná skupina" : "Soukromá skupina")
+                            </MudText>
+                        </div>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @(_isPublic
+                                ? "Ostatní uživatelé ji uvidí a mohou si ji převzít."
+                                : "Vidíte ji pouze vy. Můžete ji kdykoli zveřejnit.")
+                        </MudText>
+                    </div>
+                    <MudSwitch @bind-Value="_isPublic" Color="Color.Success" />
+                </div>
+            </MudPaper>
         </MudCardContent>
-        <MudCardActions>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreate" Disabled="_loading">Vytvořit</MudButton>
-            <MudButton Variant="Variant.Text" Href="/groups">Zrušit</MudButton>
+
+        <MudCardActions Class="pa-6 pt-0 d-flex gap-2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                       OnClick="HandleCreate" Disabled="_loading" FullWidth="true"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Style="font-weight: 600; text-transform: none;">
+                @if (_loading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                Vytvořit skupinu
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Default" Href="/groups"
+                       Style="text-transform: none;">Zrušit</MudButton>
         </MudCardActions>
     </MudCard>
 </MudContainer>
@@ -32,24 +69,24 @@
 @code {
     private string _name = "";
     private string? _description;
-    private long _selectedDictId;
+    private bool _isPublic;
     private bool _loading;
-
-    protected override void OnInitialized()
-    {
-        if (DictState.SelectedDictionaryId.HasValue)
-            _selectedDictId = DictState.SelectedDictionaryId.Value;
-        else if (DictState.Dictionaries.Any())
-            _selectedDictId = DictState.Dictionaries.First().Id;
-    }
 
     private async Task HandleCreate()
     {
-        if (string.IsNullOrWhiteSpace(_name) || _selectedDictId == 0) return;
+        if (string.IsNullOrWhiteSpace(_name) || !DictState.SelectedDictionaryId.HasValue) return;
         _loading = true;
-        var result = await GroupService.CreateGroupAsync(new CreateGroupDto(_name, _description, _selectedDictId));
-        if (result != null) { Snackbar.Add("Skupina vytvořena!", Severity.Success); Navigation.NavigateTo($"/groups/{result.Id}"); }
-        else Snackbar.Add("Chyba při vytváření skupiny.", Severity.Error);
+        var result = await GroupService.CreateGroupAsync(
+            new CreateGroupDto(_name, _description, DictState.SelectedDictionaryId.Value, _isPublic));
+        if (result != null)
+        {
+            Snackbar.Add("Skupina vytvořena!", Severity.Success);
+            Navigation.NavigateTo($"/groups/{result.Id}");
+        }
+        else
+        {
+            Snackbar.Add("Chyba při vytváření skupiny.", Severity.Error);
+        }
         _loading = false;
     }
 }

@@ -1,100 +1,170 @@
 @page "/"
 @inject GroupApiService GroupService
+@inject DictionaryApiService DictionaryService
+@inject LanguageApiService LanguageService
 @inject DictionaryStateService DictState
 @inject NavigationManager Navigation
+@inject ISnackbar Snackbar
 @implements IDisposable
 
 <PageTitle>LexiTrek - Učte se slovíčka chytře</PageTitle>
 
 <AuthorizeView>
     <Authorized>
-        <MudText Typo="Typo.h4" Class="mb-2">Vítejte zpět!</MudText>
-        <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-6">Zde je přehled vašeho učení.</MudText>
-
-        <MudGrid Spacing="4">
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Class="stat-card stat-card-primary pa-2">
-                    <MudCardContent>
-                        <div class="d-flex align-center gap-4">
-                            <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Large">
-                                <MudIcon Icon="@Icons.Material.Filled.Folder" />
-                            </MudAvatar>
-                            <div>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">Moje skupiny</MudText>
-                                <MudText Typo="Typo.h4">@_groups.Count</MudText>
-                            </div>
-                        </div>
-                    </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Color="Color.Primary" Variant="Variant.Text" Href="/groups"
-                                   EndIcon="@Icons.Material.Filled.ArrowForward">Zobrazit</MudButton>
-                    </MudCardActions>
-                </MudCard>
-            </MudItem>
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Class="stat-card stat-card-secondary pa-2">
-                    <MudCardContent>
-                        <div class="d-flex align-center gap-4">
-                            <MudAvatar Color="Color.Success" Variant="Variant.Filled" Size="Size.Large">
-                                <MudIcon Icon="@Icons.Material.Filled.Translate" />
-                            </MudAvatar>
-                            <div>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">Celkem slovíček</MudText>
-                                <MudText Typo="Typo.h4">@_groups.Sum(g => g.EntryCount)</MudText>
-                            </div>
-                        </div>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Class="stat-card stat-card-tertiary pa-2">
-                    <MudCardContent>
-                        <div class="d-flex align-center gap-4">
-                            <MudAvatar Color="Color.Warning" Variant="Variant.Filled" Size="Size.Large">
-                                <MudIcon Icon="@Icons.Material.Filled.FitnessCenter" />
-                            </MudAvatar>
-                            <div>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">Trénink</MudText>
-                                <MudText Typo="Typo.body1" Style="font-weight: 600;">Procvičte si slovíčka</MudText>
-                            </div>
-                        </div>
-                    </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Color="Color.Warning" Variant="Variant.Filled" Href="/training/setup"
-                                   StartIcon="@Icons.Material.Filled.PlayArrow">Začít trénink</MudButton>
-                    </MudCardActions>
-                </MudCard>
-            </MudItem>
-        </MudGrid>
-
-        @if (_groups.Any())
+        @if (!DictState.Dictionaries.Any())
         {
-            <MudText Typo="Typo.h5" Class="mt-8 mb-4">Vaše skupiny</MudText>
-            <MudGrid Spacing="3">
-                @foreach (var group in _groups.Take(6))
-                {
-                    <MudItem xs="12" sm="6" md="4">
-                        <MudCard Class="group-card cursor-pointer" @onclick="@(() => Navigation.NavigateTo($"/groups/{group.Id}"))">
-                            <MudCardContent>
-                                <MudText Typo="Typo.h6">@group.Name</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">@group.EntryCount slovíček</MudText>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@group.SourceLangName ↔ @group.TargetLangName</MudText>
-                            </MudCardContent>
-                        </MudCard>
-                    </MudItem>
-                }
-            </MudGrid>
+            @* ── Onboarding: nový uživatel bez slovníku ── *@
+            <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+                <div class="text-center mb-8">
+                    <MudIcon Icon="@Icons.Material.Filled.Translate" Style="font-size: 64px; color: #4F46E5;" Class="mb-4" />
+                    <MudText Typo="Typo.h3" Style="font-weight: 800; color: #1E293B;">Vítejte v LexiTrek!</MudText>
+                    <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-2" Style="font-weight: 400;">
+                        Začněte výběrem jazyků, které se chcete učit.
+                    </MudText>
+                </div>
+
+                <MudCard Elevation="2" Class="pa-2" Style="border-radius: 16px;">
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6" Class="mb-4" Align="Align.Center">Vytvořte svůj první slovník</MudText>
+
+                        <MudGrid Justify="Justify.Center" Spacing="4">
+                            <MudItem xs="12" sm="5">
+                                <MudSelect Value="_sourceLangId" ValueChanged="OnSourceLangChanged" T="int"
+                                           Label="Umím" Variant="Variant.Outlined"
+                                           ToStringFunc="@(id => _languages.FirstOrDefault(l => l.Id == id)?.Name ?? "")"
+                                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Flag">
+                                    @foreach (var lang in _languages)
+                                    {
+                                        <MudSelectItem Value="lang.Id">@lang.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="12" sm="2" Class="d-flex align-center justify-center">
+                                <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Color="Color.Secondary" />
+                            </MudItem>
+                            <MudItem xs="12" sm="5">
+                                <MudSelect @bind-Value="_targetLangId" Label="Chci se učit" Variant="Variant.Outlined"
+                                           ToStringFunc="@(id => _languages.FirstOrDefault(l => l.Id == id)?.Name ?? "")"
+                                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.School">
+                                    @foreach (var lang in _languages.Where(l => l.Id != _sourceLangId))
+                                    {
+                                        <MudSelectItem Value="lang.Id">@lang.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                        </MudGrid>
+                    </MudCardContent>
+                    <MudCardActions Class="pa-4 pt-0 d-flex justify-center">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                                   OnClick="CreateFirstDictionaryAsync" Disabled="_creating"
+                                   StartIcon="@Icons.Material.Filled.RocketLaunch"
+                                   Style="font-weight: 600; text-transform: none; padding: 12px 32px;">
+                            @if (_creating)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            }
+                            Vytvořit slovník a začít
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+
+                <div class="text-center mt-6">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Další jazykové páry můžete přidat později v nastavení.
+                    </MudText>
+                </div>
+            </MudContainer>
         }
         else
         {
-            <MudPaper Class="pa-8 mt-8 text-center" Elevation="0" Style="background: #EEF2FF; border-radius: 16px;">
-                <MudIcon Icon="@Icons.Material.Filled.RocketLaunch" Size="Size.Large" Color="Color.Primary" Class="mb-3" />
-                <MudText Typo="Typo.h6" Class="mb-2">Začněte učení!</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Vytvořte si svou první skupinu slovíček a začněte trénovat.</MudText>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/groups/create" StartIcon="@Icons.Material.Filled.Add">Vytvořit skupinu</MudButton>
-            </MudPaper>
+            @* ── Dashboard pro uživatele se slovníkem ── *@
+            <MudText Typo="Typo.h4" Class="mb-2 mt-4">Vítejte zpět!</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-6">Zde je přehled vašeho učení.</MudText>
+
+            <MudGrid Spacing="4">
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Class="stat-card stat-card-tertiary pa-4 cursor-pointer" @onclick="@(() => Navigation.NavigateTo("/training/setup"))">
+                        <MudCardContent>
+                            <div class="d-flex align-center gap-4">
+                                <MudAvatar Color="Color.Warning" Variant="Variant.Filled" Size="Size.Large">
+                                    <MudIcon Icon="@Icons.Material.Filled.FitnessCenter" />
+                                </MudAvatar>
+                                <div>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Trénink</MudText>
+                                    <MudText Typo="Typo.body1" Style="font-weight: 600;">Procvičte si slovíčka</MudText>
+                                </div>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Class="stat-card stat-card-primary pa-4 cursor-pointer" @onclick="@(() => Navigation.NavigateTo("/groups"))">
+                        <MudCardContent>
+                            <div class="d-flex align-center gap-4">
+                                <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Large">
+                                    <MudIcon Icon="@Icons.Material.Filled.Folder" />
+                                </MudAvatar>
+                                <div>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Moje skupiny</MudText>
+                                    <MudText Typo="Typo.h4">@_groups.Count</MudText>
+                                </div>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Class="stat-card stat-card-secondary pa-4">
+                        <MudCardContent>
+                            <div class="d-flex align-center gap-4">
+                                <MudAvatar Color="Color.Success" Variant="Variant.Filled" Size="Size.Large">
+                                    <MudIcon Icon="@Icons.Material.Filled.Translate" />
+                                </MudAvatar>
+                                <div>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Celkem slovíček</MudText>
+                                    <MudText Typo="Typo.h4">@_groups.Sum(g => g.EntryCount)</MudText>
+                                </div>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+
+            @if (_groups.Any())
+            {
+                <MudText Typo="Typo.h5" Class="mt-8 mb-4">Vaše skupiny</MudText>
+                <MudGrid Spacing="3">
+                    @foreach (var group in _groups.Take(6))
+                    {
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudCard Class="group-card cursor-pointer" Style="border-radius: 12px;"
+                                     @onclick="@(() => Navigation.NavigateTo($"/groups/{group.Id}"))">
+                                <MudCardContent>
+                                    <div class="d-flex align-center justify-space-between mb-1">
+                                        <MudText Typo="Typo.h6" Style="font-weight: 600;">@group.Name</MudText>
+                                        <MudTooltip Text="@(group.IsPublic ? "Veřejná skupina" : "Soukromá skupina")">
+                                            <MudIcon Icon="@(group.IsPublic ? Icons.Material.Filled.Public : Icons.Material.Filled.Lock)"
+                                                     Size="Size.Small" Color="@(group.IsPublic ? Color.Success : Color.Default)" />
+                                        </MudTooltip>
+                                    </div>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@group.EntryCount slovíček</MudText>
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+                    }
+                </MudGrid>
+            }
+            else
+            {
+                <MudPaper Class="pa-8 mt-8 text-center" Elevation="0" Style="background: #EEF2FF; border-radius: 16px;">
+                    <MudIcon Icon="@Icons.Material.Filled.RocketLaunch" Size="Size.Large" Color="Color.Primary" Class="mb-3" />
+                    <MudText Typo="Typo.h6" Class="mb-2">Začněte učení!</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Vytvořte si svou první skupinu slovíček a začněte trénovat.</MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/groups/create" StartIcon="@Icons.Material.Filled.Add">Vytvořit skupinu</MudButton>
+                </MudPaper>
+            }
         }
     </Authorized>
+
     <NotAuthorized>
         <div class="landing-hero">
             <div class="landing-content">
@@ -119,6 +189,10 @@
 
 @code {
     private List<GroupListDto> _groups = [];
+    private List<LanguageDto> _languages = [];
+    private int _sourceLangId;
+    private int _targetLangId;
+    private bool _creating;
 
     [CascadingParameter]
     private Task<AuthenticationState>? AuthState { get; set; }
@@ -130,8 +204,48 @@
         {
             var state = await AuthState;
             if (state.User.Identity?.IsAuthenticated == true)
+            {
                 _groups = await GroupService.GetUserGroupsAsync();
+
+                if (!DictState.Dictionaries.Any())
+                {
+                    _languages = await LanguageService.GetLanguagesAsync();
+                    if (_languages.Count >= 2)
+                    {
+                        _sourceLangId = _languages[0].Id;
+                        _targetLangId = _languages[1].Id;
+                    }
+                }
+            }
         }
+    }
+
+    private void OnSourceLangChanged(int newValue)
+    {
+        _sourceLangId = newValue;
+        if (_targetLangId == _sourceLangId)
+            _targetLangId = 0;
+    }
+
+    private async Task CreateFirstDictionaryAsync()
+    {
+        if (_sourceLangId == 0 || _targetLangId == 0) return;
+
+        _creating = true;
+        var result = await DictionaryService.CreateDictionaryAsync(new CreateDictionaryDto(_sourceLangId, _targetLangId));
+
+        if (result != null)
+        {
+            await DictState.LoadAsync();
+            Snackbar.Add("Slovník vytvořen!", Severity.Success);
+            Navigation.NavigateTo("/groups/create");
+        }
+        else
+        {
+            Snackbar.Add("Chyba při vytváření slovníku.", Severity.Error);
+        }
+
+        _creating = false;
     }
 
     private void OnDictionaryChanged() => InvokeAsync(StateHasChanged);

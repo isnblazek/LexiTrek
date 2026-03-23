@@ -19,114 +19,165 @@ else if (_group == null)
 }
 else
 {
-    <MudGrid>
-        <MudItem xs="12">
-            @if (_editing)
-            {
-                <MudCard Class="mb-4">
-                    <MudCardContent>
-                        <MudText Typo="Typo.h6" Class="mb-2">Upravit skupinu</MudText>
-                        <MudForm @ref="_form">
-                            <MudTextField @bind-Value="_editName" Label="Název" Variant="Variant.Outlined" Class="mb-3" Required="true" />
-                            <MudTextField @bind-Value="_editDescription" Label="Popis" Variant="Variant.Outlined" Class="mb-3" Lines="3" />
-                            <MudSwitch @bind-Value="_editIsPublic" Label="Veřejná" Color="Color.Success" />
-                        </MudForm>
-                    </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveEditAsync" Disabled="_saving">Uložit</MudButton>
-                        <MudButton Variant="Variant.Text" OnClick="CancelEdit">Zrušit</MudButton>
-                    </MudCardActions>
-                </MudCard>
-            }
-            else
-            {
-                <div class="d-flex align-center gap-2 mb-2">
-                    <MudText Typo="Typo.h4">@_group.Name</MudText>
-                    @if (_group.IsOwner)
-                    {
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="StartEdit" />
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="DeleteGroupAsync" />
-                    }
-                </div>
-                @if (!string.IsNullOrEmpty(_group.Description))
-                {
-                    <MudText Typo="Typo.body1" Class="mb-2">@_group.Description</MudText>
-                }
-                <MudChip T="string" Size="Size.Small" Color="@(_group.IsPublic ? Color.Success : Color.Default)">
-                    @(_group.IsPublic ? "Veřejná" : "Soukromá")
-                </MudChip>
-                <MudChip T="string" Size="Size.Small" Color="Color.Info">
-                    @_group.SourceLangName ↔ @_group.TargetLangName
-                </MudChip>
-                <MudText Typo="Typo.caption" Class="ml-2">Autor: @_group.OwnerDisplayName</MudText>
-            }
-        </MudItem>
-
-        <MudItem xs="12">
-            @if (_group.IsOwner)
-            {
-                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                           OnClick="@(() => _showAddEntry = true)" StartIcon="@Icons.Material.Filled.Add" Class="mr-2">
-                    Přidat slovíčko
-                </MudButton>
-            }
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="@($"/training/setup?groupId={Id}")">
-                Trénink této skupiny
-            </MudButton>
-        </MudItem>
-    </MudGrid>
-
-    @if (_showAddEntry)
+    @if (_editing)
     {
-        <MudCard Class="mt-4 mb-4">
-            <MudCardContent>
-                <MudText Typo="Typo.h6" Class="mb-2">Nové slovíčko</MudText>
-                <MudGrid>
-                    <MudItem xs="12" sm="4">
-                        <MudTextField @bind-Value="_newSourceText" Label="@_group.SourceLangName" Variant="Variant.Outlined" />
-                    </MudItem>
-                    <MudItem xs="12" sm="4">
-                        <MudTextField @bind-Value="_newTargetText" Label="@_group.TargetLangName" Variant="Variant.Outlined" />
-                    </MudItem>
-                    <MudItem xs="12" sm="4">
-                        <MudTextField @bind-Value="_newNotes" Label="Poznámky" Variant="Variant.Outlined" />
-                    </MudItem>
-                </MudGrid>
+        <MudCard Elevation="2" Class="mb-4" Style="border-radius: 16px;">
+            <MudCardContent Class="pa-6">
+                <MudText Typo="Typo.h6" Class="mb-4">Upravit skupinu</MudText>
+                <MudForm @ref="_form">
+                    <MudTextField @bind-Value="_editName" Label="Název skupiny" Variant="Variant.Outlined" Class="mb-4"
+                                  Required="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Label" />
+                    <MudTextField @bind-Value="_editDescription" Label="Popis (volitelný)" Variant="Variant.Outlined" Class="mb-6" Lines="3" />
+
+                    <MudPaper Elevation="0" Class="pa-4" Style="background: #F8FAFC; border-radius: 12px;">
+                        <div class="d-flex justify-space-between align-center">
+                            <div>
+                                <div class="d-flex align-center gap-2 mb-1">
+                                    <MudIcon Icon="@(_editIsPublic ? Icons.Material.Filled.Public : Icons.Material.Filled.Lock)"
+                                             Color="@(_editIsPublic ? Color.Success : Color.Default)" Size="Size.Small" />
+                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">
+                                        @(_editIsPublic ? "Veřejná skupina" : "Soukromá skupina")
+                                    </MudText>
+                                </div>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @(_editIsPublic
+                                        ? "Ostatní uživatelé ji uvidí a mohou si ji převzít."
+                                        : "Vidíte ji pouze vy. Můžete ji kdykoli zveřejnit.")
+                                </MudText>
+                            </div>
+                            <MudSwitch @bind-Value="_editIsPublic" Color="Color.Success" />
+                        </div>
+                    </MudPaper>
+                </MudForm>
             </MudCardContent>
-            <MudCardActions>
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="AddEntryAsync">Přidat</MudButton>
-                <MudButton OnClick="@(() => _showAddEntry = false)">Zrušit</MudButton>
+            <MudCardActions Class="pa-6 pt-0 d-flex gap-2">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveEditAsync" Disabled="_saving"
+                           Style="text-transform: none;">Uložit</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="CancelEdit"
+                           Style="text-transform: none;">Zrušit</MudButton>
             </MudCardActions>
         </MudCard>
     }
+    else
+    {
+        @* ── Kompaktní hlavička ── *@
+        <div class="d-flex align-center justify-space-between mb-3 mt-4">
+            <div class="d-flex align-center gap-3">
+                <MudText Typo="Typo.h5" Style="font-weight: 700;">@_group.Name</MudText>
+                <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
+                    @_group.SourceLangName ↔ @_group.TargetLangName
+                </MudChip>
+                @if (_group.IsOwner)
+                {
+                    <MudTooltip Text="@(_group.IsPublic ? "Skupina je veřejná — ostatní ji mohou převzít" : "Skupina je soukromá — vidíte ji pouze vy")">
+                        <MudSwitch T="bool" Value="_group.IsPublic" ValueChanged="OnPublicToggled" Color="Color.Success"
+                                   Label="@(_group.IsPublic ? "Veřejná" : "Soukromá")" />
+                    </MudTooltip>
+                }
+                else if (_group.IsPublic)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled"
+                             Icon="@Icons.Material.Filled.Public">Veřejná</MudChip>
+                }
+            </div>
+            @if (_group.IsOwner)
+            {
+                <div class="d-flex gap-1">
+                    <MudTooltip Text="Upravit skupinu">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="StartEdit" />
+                    </MudTooltip>
+                    <MudTooltip Text="Smazat skupinu">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="DeleteGroupAsync" />
+                    </MudTooltip>
+                </div>
+            }
+        </div>
 
-    <MudTable Items="_entries" Hover="true" Striped="true" Class="mt-4">
+        @if (!string.IsNullOrEmpty(_group.Description))
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">@_group.Description</MudText>
+        }
+
+        @* ── Akční lišta ── *@
+        <div class="d-flex gap-2 mb-4">
+            @if (_group.IsOwner)
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                           OnClick="@(() => _showAddEntry = !_showAddEntry)" StartIcon="@Icons.Material.Filled.Add"
+                           Style="text-transform: none;">
+                    Přidat slovíčko
+                </MudButton>
+            }
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                       Href="@($"/training/setup?groupId={Id}")" StartIcon="@Icons.Material.Filled.FitnessCenter"
+                       Style="text-transform: none;">
+                Trénink
+            </MudButton>
+        </div>
+    }
+
+    @* ── Inline formulář pro přidání ── *@
+    @if (_showAddEntry)
+    {
+        <MudPaper Elevation="1" Class="pa-4 mb-4" Style="border-radius: 12px;">
+            <MudGrid Spacing="2" Class="align-end">
+                <MudItem xs="12" sm="4">
+                    <MudTextField @bind-Value="_newSourceText" Label="@_group.SourceLangName" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField @bind-Value="_newTargetText" Label="@_group.TargetLangName" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField @bind-Value="_newNotes" Label="Poznámky" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="2" Class="d-flex gap-1">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddEntryAsync"
+                               Size="Size.Small" Style="text-transform: none;">Přidat</MudButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
+                                   OnClick="@(() => _showAddEntry = false)" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+
+    @* ── Tabulka slovíček ── *@
+    <MudTable Items="_entries" Hover="true" Striped="true" Dense="true" Elevation="1"
+              Style="border-radius: 12px;">
         <HeaderContent>
-            <MudTh>@_group.SourceLangName</MudTh>
-            <MudTh>@_group.TargetLangName</MudTh>
-            <MudTh>Poznámky</MudTh>
-            <MudTh>Tagy</MudTh>
-            @if (_group.IsOwner) { <MudTh>Akce</MudTh> }
+            <MudTh Style="font-weight: 700;">@_group.SourceLangName</MudTh>
+            <MudTh Style="font-weight: 700;">@_group.TargetLangName</MudTh>
+            <MudTh Style="font-weight: 700;">Poznámky</MudTh>
+            <MudTh Style="font-weight: 700;">Tagy</MudTh>
+            @if (_group.IsOwner) { <MudTh Style="width: 80px;"></MudTh> }
         </HeaderContent>
         <RowTemplate>
-            <MudTd>@context.SourceText</MudTd>
-            <MudTd>@context.TargetText</MudTd>
-            <MudTd>@context.Notes</MudTd>
-            <MudTd>
+            <MudTd DataLabel="@_group.SourceLangName"><strong>@context.SourceText</strong></MudTd>
+            <MudTd DataLabel="@_group.TargetLangName">@context.TargetText</MudTd>
+            <MudTd DataLabel="Poznámky"><MudText Typo="Typo.body2" Color="Color.Secondary">@context.Notes</MudText></MudTd>
+            <MudTd DataLabel="Tagy">
                 @foreach (var tag in context.Tags)
                 {
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text">@tag.Name</MudChip>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Primary">@tag.Name</MudChip>
                 }
             </MudTd>
             @if (_group.IsOwner)
             {
                 <MudTd>
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditEntryAsync(context))" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(() => RemoveEntryAsync(context.Id))" Color="Color.Error" />
+                    <MudTooltip Text="Upravit">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditEntryAsync(context))" />
+                    </MudTooltip>
+                    <MudTooltip Text="Smazat">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(() => RemoveEntryAsync(context.Id))" Color="Color.Error" />
+                    </MudTooltip>
                 </MudTd>
             }
         </RowTemplate>
-        <NoRecordsContent><MudText>Žádná slovíčka. Přidejte první!</MudText></NoRecordsContent>
+        <NoRecordsContent>
+            <div class="pa-8 text-center">
+                <MudIcon Icon="@Icons.Material.Filled.Inbox" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+                <MudText Color="Color.Secondary">Zatím žádná slovíčka. Přidejte první!</MudText>
+            </div>
+        </NoRecordsContent>
     </MudTable>
 }
 
@@ -165,6 +216,17 @@ else
         _saving = false;
     }
 
+    private async Task OnPublicToggled(bool newValue)
+    {
+        var result = await GroupService.UpdateGroupAsync(Id,
+            new UpdateGroupDto(_group!.Name, _group.Description, newValue));
+        if (result != null)
+        {
+            _group = result;
+            Snackbar.Add(result.IsPublic ? "Skupina zveřejněna!" : "Skupina skryta.", Severity.Success);
+        }
+    }
+
     private async Task DeleteGroupAsync()
     {
         var result = await DialogService.ShowMessageBox("Smazat skupinu", "Opravdu chcete smazat tuto skupinu?", yesText: "Smazat", cancelText: "Zrušit");
@@ -179,7 +241,7 @@ else
     {
         if (string.IsNullOrWhiteSpace(_newSourceText) || string.IsNullOrWhiteSpace(_newTargetText) || _group == null) return;
         var entry = await WordService.AddEntryAsync(_group.DictionaryId, new CreateEntryDto(_newSourceText, _newTargetText, _newNotes), Id);
-        if (entry != null) { _entries.Add(entry); _newSourceText = ""; _newTargetText = ""; _newNotes = null; _showAddEntry = false; Snackbar.Add("Slovíčko přidáno!", Severity.Success); }
+        if (entry != null) { _entries.Add(entry); _newSourceText = ""; _newTargetText = ""; _newNotes = null; Snackbar.Add("Slovíčko přidáno!", Severity.Success); }
     }
 
     private async Task EditEntryAsync(DictionaryEntryDto entry)

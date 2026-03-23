@@ -4,43 +4,9 @@
 @inject LanguageApiService LanguageService
 @inject DictionaryStateService DictState
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
-<PageTitle>Nastavení - LexiTrek</PageTitle>
-
-<MudText Typo="Typo.h4" Class="mb-4">Nastavení</MudText>
-
-<MudText Typo="Typo.h5" Class="mb-3">Slovníky</MudText>
-
-<MudCard Class="mb-4">
-    <MudCardContent>
-        <MudText Typo="Typo.h6" Class="mb-2">Nový slovník</MudText>
-        <MudGrid>
-            <MudItem xs="12" sm="5">
-                <MudSelect Value="_sourceLangId" ValueChanged="OnSourceLangChanged" T="int"
-                           Label="Zdrojový jazyk" Variant="Variant.Outlined"
-                           ToStringFunc="@(id => _languages.FirstOrDefault(l => l.Id == id)?.Name ?? "")">
-                    @foreach (var lang in _languages)
-                    {
-                        <MudSelectItem Value="lang.Id">@lang.Code – @lang.Name</MudSelectItem>
-                    }
-                </MudSelect>
-            </MudItem>
-            <MudItem xs="12" sm="5">
-                <MudSelect @bind-Value="_targetLangId" Label="Cílový jazyk" Variant="Variant.Outlined"
-                           ToStringFunc="@(id => _languages.FirstOrDefault(l => l.Id == id)?.Name ?? "")">
-                    @foreach (var lang in _languages.Where(l => l.Id != _sourceLangId))
-                    {
-                        <MudSelectItem Value="lang.Id">@lang.Code – @lang.Name</MudSelectItem>
-                    }
-                </MudSelect>
-            </MudItem>
-            <MudItem xs="12" sm="2" Class="d-flex align-end">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreate"
-                           Disabled="_creating" FullWidth="true">Vytvořit</MudButton>
-            </MudItem>
-        </MudGrid>
-    </MudCardContent>
-</MudCard>
+<PageTitle>Slovníky - LexiTrek</PageTitle>
 
 @if (_loading)
 {
@@ -48,26 +14,124 @@
 }
 else if (!DictState.Dictionaries.Any())
 {
-    <MudAlert Severity="Severity.Info">Žádné slovníky k zobrazení.</MudAlert>
+    @* ── Bez slovníků: onboarding styl ── *@
+    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+        <div class="text-center mb-8">
+            <MudIcon Icon="@Icons.Material.Filled.MenuBook" Style="font-size: 64px; color: #4F46E5;" Class="mb-4" />
+            <MudText Typo="Typo.h3" Style="font-weight: 800; color: #1E293B;">Vaše slovníky</MudText>
+            <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mt-2" Style="font-weight: 400;">
+                Zatím nemáte žádný slovník. Vyberte jazyky a začněte!
+            </MudText>
+        </div>
+
+        <MudCard Elevation="2" Class="pa-2" Style="border-radius: 16px;">
+            <MudCardContent>
+                <MudText Typo="Typo.h6" Class="mb-4" Align="Align.Center">Vytvořte svůj první slovník</MudText>
+
+                <MudGrid Justify="Justify.Center" Spacing="4">
+                    <MudItem xs="12" sm="5">
+                        <MudSelect Value="_sourceLangId" ValueChanged="OnSourceLangChanged" T="int"
+                                   Label="Umím" Variant="Variant.Outlined"
+                                   ToStringFunc="@(id => _languages.FirstOrDefault(l => l.Id == id)?.Name ?? "")"
+                                   Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Flag">
+                            @foreach (var lang in _languages)
+                            {
+                                <MudSelectItem Value="lang.Id">@lang.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="2" Class="d-flex align-center justify-center">
+                        <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Color="Color.Secondary" />
+                    </MudItem>
+                    <MudItem xs="12" sm="5">
+                        <MudSelect @bind-Value="_targetLangId" Label="Chci se učit" Variant="Variant.Outlined"
+                                   ToStringFunc="@(id => _languages.FirstOrDefault(l => l.Id == id)?.Name ?? "")"
+                                   Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.School">
+                            @foreach (var lang in _languages.Where(l => l.Id != _sourceLangId))
+                            {
+                                <MudSelectItem Value="lang.Id">@lang.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+            <MudCardActions Class="pa-4 pt-0 d-flex justify-center">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                           OnClick="HandleCreate" Disabled="_creating"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Style="font-weight: 600; text-transform: none; padding: 12px 32px;">
+                    @if (_creating)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    }
+                    Vytvořit slovník
+                </MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudContainer>
 }
 else
 {
-    <MudGrid>
-        @foreach (var dict in DictState.Dictionaries)
-        {
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard>
-                    <MudCardContent>
-                        <div class="d-flex justify-space-between align-center">
-                            <MudText Typo="Typo.h6">@dict.SourceLangName <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small" /> @dict.TargetLangName</MudText>
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
-                                           OnClick="@(() => HandleDelete(dict.Id))" />
-                        </div>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
-        }
-    </MudGrid>
+    @* ── Se slovníky: kompaktní přidání + grid ── *@
+    <MudContainer MaxWidth="MaxWidth.Medium">
+        <MudCard Elevation="1" Class="mb-6 pa-2" Style="border-radius: 12px;">
+            <MudCardContent>
+                <MudText Typo="Typo.h6" Class="mb-3">Přidat slovník</MudText>
+                <MudGrid Spacing="3" Class="align-center">
+                    <MudItem xs="12" sm="4">
+                        <MudSelect Value="_sourceLangId" ValueChanged="OnSourceLangChanged" T="int"
+                                   Label="Umím" Variant="Variant.Outlined" Dense="true"
+                                   ToStringFunc="@(id => _languages.FirstOrDefault(l => l.Id == id)?.Name ?? "")">
+                            @foreach (var lang in _languages)
+                            {
+                                <MudSelectItem Value="lang.Id">@lang.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="1" Class="d-flex justify-center">
+                        <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Color="Color.Secondary" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudSelect @bind-Value="_targetLangId" Label="Chci se učit" Variant="Variant.Outlined" Dense="true"
+                                   ToStringFunc="@(id => _languages.FirstOrDefault(l => l.Id == id)?.Name ?? "")">
+                            @foreach (var lang in _languages.Where(l => l.Id != _sourceLangId))
+                            {
+                                <MudSelectItem Value="lang.Id">@lang.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="3">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleCreate"
+                                   Disabled="_creating" FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.Add">Vytvořit</MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+
+        <MudText Typo="Typo.h6" Class="mb-3">Vaše slovníky</MudText>
+        <MudGrid>
+            @foreach (var dict in DictState.Dictionaries)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Elevation="1" Style="border-radius: 12px;">
+                        <MudCardContent>
+                            <div class="d-flex justify-space-between align-center">
+                                <div class="d-flex align-center gap-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.MenuBook" Color="Color.Primary" />
+                                    <MudText Typo="Typo.h6">@dict.SourceLangName</MudText>
+                                    <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.h6">@dict.TargetLangName</MudText>
+                                </div>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                                               OnClick="@(() => HandleDelete(dict.Id))" />
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    </MudContainer>
 }
 
 @code {
@@ -81,6 +145,13 @@ else
     {
         _languages = await LanguageService.GetLanguagesAsync();
         await DictState.LoadAsync();
+
+        if (_languages.Count >= 2)
+        {
+            _sourceLangId = _languages[0].Id;
+            _targetLangId = _languages[1].Id;
+        }
+
         _loading = false;
     }
 
@@ -115,14 +186,21 @@ else
 
     private async Task HandleDelete(long id)
     {
-        if (await DictionaryService.DeleteDictionaryAsync(id))
+        var confirm = await DialogService.ShowMessageBox(
+            "Smazat slovník", "Opravdu chcete smazat tento slovník?",
+            yesText: "Smazat", cancelText: "Zrušit");
+
+        if (confirm == true)
         {
-            await DictState.LoadAsync();
-            Snackbar.Add("Slovník smazán.", Severity.Success);
-        }
-        else
-        {
-            Snackbar.Add("Nelze smazat tento slovník.", Severity.Error);
+            if (await DictionaryService.DeleteDictionaryAsync(id))
+            {
+                await DictState.LoadAsync();
+                Snackbar.Add("Slovník smazán.", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Nelze smazat slovník se skupinami.", Severity.Error);
+            }
         }
     }
 }

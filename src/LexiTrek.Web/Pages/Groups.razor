@@ -7,12 +7,13 @@
 
 <PageTitle>Moje skupiny - LexiTrek</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">Moje skupiny</MudText>
-
-<MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/groups/create" Class="mb-4"
-           StartIcon="@Icons.Material.Filled.Add">
-    Nová skupina
-</MudButton>
+<div class="d-flex align-center justify-space-between mt-4 mb-4">
+    <MudText Typo="Typo.h5" Style="font-weight: 700;">Moje skupiny</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/groups/create" Size="Size.Small"
+               StartIcon="@Icons.Material.Filled.Add" Style="text-transform: none;">
+        Nová skupina
+    </MudButton>
+</div>
 
 @if (_loading)
 {
@@ -20,36 +21,32 @@
 }
 else if (!FilteredGroups.Any())
 {
-    <MudAlert Severity="Severity.Info">Zatím nemáte žádné skupiny. Vytvořte si první!</MudAlert>
+    <MudPaper Class="pa-8 text-center" Elevation="0" Style="background: #EEF2FF; border-radius: 16px;">
+        <MudIcon Icon="@Icons.Material.Filled.Inbox" Size="Size.Large" Color="Color.Primary" Class="mb-2" />
+        <MudText Typo="Typo.h6" Class="mb-2">Zatím žádné skupiny</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Vytvořte si první skupinu slovíček.</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/groups/create"
+                   StartIcon="@Icons.Material.Filled.Add" Style="text-transform: none;">Vytvořit skupinu</MudButton>
+    </MudPaper>
 }
 else
 {
-    <MudGrid>
+    <MudGrid Spacing="3">
         @foreach (var group in FilteredGroups)
         {
             <MudItem xs="12" sm="6" md="4">
-                <MudCard>
+                <MudCard Class="group-card cursor-pointer" Style="border-radius: 12px;"
+                         @onclick="@(() => Navigation.NavigateTo($"/groups/{group.Id}"))">
                     <MudCardContent>
-                        <MudText Typo="Typo.h6">@group.Name</MudText>
-                        <MudText Typo="Typo.body2">@group.EntryCount slovíček</MudText>
-                        <MudChip T="string" Size="Size.Small"
-                                 Color="@(group.IsPublic ? Color.Success : Color.Default)">
-                            @(group.IsPublic ? "Veřejná" : "Soukromá")
-                        </MudChip>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            @group.SourceLangName ↔ @group.TargetLangName
-                        </MudText>
-                        @if (!string.IsNullOrEmpty(group.Description))
-                        {
-                            <MudText Typo="Typo.caption" Class="mt-2">@group.Description</MudText>
-                        }
+                        <div class="d-flex align-center justify-space-between mb-1">
+                            <MudText Typo="Typo.h6" Style="font-weight: 600;">@group.Name</MudText>
+                            <MudTooltip Text="@(group.IsPublic ? "Veřejná skupina" : "Soukromá skupina")">
+                                <MudIcon Icon="@(group.IsPublic ? Icons.Material.Filled.Public : Icons.Material.Filled.Lock)"
+                                         Size="Size.Small" Color="@(group.IsPublic ? Color.Success : Color.Default)" />
+                            </MudTooltip>
+                        </div>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@group.EntryCount slovíček</MudText>
                     </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Size="Size.Small" Color="Color.Primary"
-                                   OnClick="@(() => Navigation.NavigateTo($"/groups/{group.Id}"))">
-                            Otevřít
-                        </MudButton>
-                    </MudCardActions>
                 </MudCard>
             </MudItem>
         }

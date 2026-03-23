@@ -74,7 +74,7 @@ public class GroupService : IGroupService
         {
             Name = dto.Name, Description = dto.Description,
             OwnerId = userId, DictionaryId = dto.DictionaryId,
-            IsPublic = false,
+            IsPublic = dto.IsPublic,
             CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
         };
 

@@ -7,11 +7,11 @@
 
 <PageTitle>Veřejné skupiny - LexiTrek</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4">Veřejné skupiny</MudText>
+<MudText Typo="Typo.h5" Style="font-weight: 700;" Class="mt-4 mb-4">Veřejné skupiny</MudText>
 
 <MudTextField @bind-Value="_search" Label="Hledat..." Variant="Variant.Outlined" Class="mb-4"
               Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search"
-              OnKeyUp="HandleSearch" Immediate="true" />
+              OnKeyUp="HandleSearch" Immediate="true" Margin="Margin.Dense" />
 
 @if (_loading)
 {
@@ -19,24 +19,34 @@
 }
 else if (_result == null || !_result.Items.Any())
 {
-    <MudAlert Severity="Severity.Info">Žádné veřejné skupiny k zobrazení.</MudAlert>
+    <MudPaper Class="pa-8 text-center" Elevation="0" Style="background: #EEF2FF; border-radius: 16px;">
+        <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+        <MudText Color="Color.Secondary">Žádné veřejné skupiny k zobrazení.</MudText>
+    </MudPaper>
 }
 else
 {
-    <MudGrid>
+    <MudGrid Spacing="3">
         @foreach (var group in _result.Items)
         {
             <MudItem xs="12" sm="6" md="4">
-                <MudCard>
+                <MudCard Style="border-radius: 12px;">
                     <MudCardContent>
-                        <MudText Typo="Typo.h6">@group.Name</MudText>
-                        <MudText Typo="Typo.body2">@group.EntryCount slovíček</MudText>
-                        <MudText Typo="Typo.caption">Autor: @group.OwnerDisplayName</MudText>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">@group.SourceLangName ↔ @group.TargetLangName</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight: 600;">@group.Name</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@group.EntryCount slovíček</MudText>
+                        <div class="d-flex align-center gap-2 mt-1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@group.OwnerDisplayName</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@group.SourceLangName ↔ @group.TargetLangName</MudText>
+                        </div>
+                        @if (!string.IsNullOrEmpty(group.Description))
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">@group.Description</MudText>
+                        }
                     </MudCardContent>
-                    <MudCardActions>
+                    <MudCardActions Class="pa-4 pt-0">
                         <MudButton Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled"
-                                   OnClick="@(() => ForkAsync(group.Id))">Převzít (fork)</MudButton>
+                                   OnClick="@(() => ForkAsync(group.Id))" StartIcon="@Icons.Material.Filled.ContentCopy"
+                                   Style="text-transform: none;">Převzít</MudButton>
                     </MudCardActions>
                 </MudCard>
             </MudItem>

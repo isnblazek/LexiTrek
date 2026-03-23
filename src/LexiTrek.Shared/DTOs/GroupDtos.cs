@@ -1,6 +1,6 @@
 namespace LexiTrek.Shared.DTOs;
 
-public record CreateGroupDto(string Name, string? Description, long DictionaryId);
+public record CreateGroupDto(string Name, string? Description, long DictionaryId, bool IsPublic = false);
 public record UpdateGroupDto(string Name, string? Description, bool IsPublic);
 
 public record GroupDto(
