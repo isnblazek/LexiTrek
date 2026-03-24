@@ -19,16 +19,6 @@
 {
     <MudProgressLinear Indeterminate="true" />
 }
-else if (!FilteredGroups.Any())
-{
-    <MudPaper Class="pa-8 text-center" Elevation="0" Style="background: #EEF2FF; border-radius: 16px;">
-        <MudIcon Icon="@Icons.Material.Filled.Inbox" Size="Size.Large" Color="Color.Primary" Class="mb-2" />
-        <MudText Typo="Typo.h6" Class="mb-2">Zatím žádné skupiny</MudText>
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Vytvořte si první skupinu slovíček.</MudText>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/groups/create"
-                   StartIcon="@Icons.Material.Filled.Add" Style="text-transform: none;">Vytvořit skupinu</MudButton>
-    </MudPaper>
-}
 else
 {
     <MudGrid Spacing="3">
@@ -45,6 +35,15 @@ else
                         <MudText Typo="Typo.body2" Color="Color.Secondary">@(DictState.SelectedDictionary?.EntryCount ?? 0) slovíček</MudText>
                     </MudCardContent>
                 </MudCard>
+            </MudItem>
+        }
+        @if (!FilteredGroups.Any())
+        {
+            <MudItem xs="12" sm="6" md="8">
+                <MudPaper Class="pa-6 text-center" Elevation="0" Style="background: #EEF2FF; border-radius: 16px;">
+                    <MudText Typo="Typo.h6" Class="mb-1">Zatím žádné vlastní skupiny</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Vytvořte si první skupinu slovíček.</MudText>
+                </MudPaper>
             </MudItem>
         }
         @foreach (var group in FilteredGroups)

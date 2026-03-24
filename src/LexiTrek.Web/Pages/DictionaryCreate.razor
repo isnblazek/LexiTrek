@@ -17,6 +17,12 @@
                 @DictState.SelectedDictionary.SourceLangName ↔ @DictState.SelectedDictionary.TargetLangName
             </MudChip>
         }
+        @if (_entryIds.Any())
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined" Class="mt-2">
+                @_entryIds.Count slovíček k přiřazení
+            </MudChip>
+        }
     </div>
 
     <MudCard Elevation="2" Style="border-radius: 16px;">
@@ -58,7 +64,7 @@
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
                 }
-                Vytvořit skupinu
+                @(_entryIds.Any() ? $"Vytvořit a přiřadit {_entryIds.Count} slovíček" : "Vytvořit skupinu")
             </MudButton>
             <MudButton Variant="Variant.Outlined" Color="Color.Default" Href="/groups"
                        Style="text-transform: none;">Zrušit</MudButton>
@@ -71,22 +77,50 @@
     private string? _description;
     private bool _isPublic;
     private bool _loading;
+    private List<long> _entryIds = [];
+
+    [SupplyParameterFromQuery(Name = "entryIds")]
+    public string? EntryIdsParam { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrWhiteSpace(EntryIdsParam))
+        {
+            _entryIds = EntryIdsParam.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => long.TryParse(s, out var id) ? id : 0)
+                .Where(id => id > 0)
+                .ToList();
+        }
+    }
 
     private async Task HandleCreate()
     {
         if (string.IsNullOrWhiteSpace(_name) || !DictState.SelectedDictionaryId.HasValue) return;
         _loading = true;
+
         var result = await GroupService.CreateGroupAsync(
             new CreateGroupDto(_name, _description, DictState.SelectedDictionaryId.Value, _isPublic));
+
         if (result != null)
         {
-            Snackbar.Add("Skupina vytvořena!", Severity.Success);
+            // Přiřadit vybraná slovíčka do nové skupiny
+            foreach (var entryId in _entryIds)
+            {
+                await GroupService.AddEntryToGroupAsync(result.Id, entryId);
+            }
+
+            if (_entryIds.Any())
+                Snackbar.Add($"Skupina vytvořena a {_entryIds.Count} slovíček přiřazeno!", Severity.Success);
+            else
+                Snackbar.Add("Skupina vytvořena!", Severity.Success);
+
             Navigation.NavigateTo($"/groups/{result.Id}");
         }
         else
         {
             Snackbar.Add("Chyba při vytváření skupiny.", Severity.Error);
         }
+
         _loading = false;
     }
 }

@@ -1,7 +1,12 @@
 @page "/dictionaries/{Id:long}/entries"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject WordApiService WordService
+@inject GroupApiService GroupService
+@inject TagApiService TagService
 @inject DictionaryStateService DictState
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <PageTitle>Všechna slovíčka - LexiTrek</PageTitle>
 
@@ -11,27 +16,82 @@
 }
 else
 {
-    <div class="d-flex align-center justify-space-between mb-3 mt-4">
-        <div class="d-flex align-center gap-2">
-            <MudText Typo="Typo.h5" Style="font-weight: 700;">Všechna slovíčka</MudText>
-            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
-                @_entries.Count slovíček
-            </MudChip>
-        </div>
+    @* ── Hlavička ── *@
+    <div class="d-flex align-center gap-2 mb-3 mt-4">
+        <MudText Typo="Typo.h5" Style="font-weight: 700;">Všechna slovíčka</MudText>
+        <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
+            @_entries.Count slovíček
+        </MudChip>
     </div>
 
+    @* ── Akční lišta + vyhledávání (sticky) ── *@
+    <div class="d-flex align-center gap-2 mb-4 py-2" style="position: sticky; top: 64px; z-index: 10; background: #F8FAFC;">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                   OnClick="@(() => _showAddEntry = !_showAddEntry)" StartIcon="@Icons.Material.Filled.Add"
+                   Style="text-transform: none;">
+            Přidat slovíčko
+        </MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                   Href="/training/setup" StartIcon="@Icons.Material.Filled.FitnessCenter"
+                   Style="text-transform: none;">
+            Trénink
+        </MudButton>
+        @if (_selectedEntries.Any())
+        {
+            <MudMenu Label="@($"Přidat do skupiny ({_selectedEntries.Count})")" Variant="Variant.Filled"
+                     Color="Color.Secondary" Size="Size.Small" StartIcon="@Icons.Material.Filled.CreateNewFolder"
+                     AnchorOrigin="Origin.BottomLeft" Dense="true"
+                     Style="text-transform: none;">
+                @foreach (var g in _userGroups)
+                {
+                    <MudMenuItem OnClick="@(() => AddToGroupAsync(g.Id))">@g.Name</MudMenuItem>
+                }
+                <MudDivider />
+                <MudMenuItem Icon="@Icons.Material.Filled.Add"
+                             OnClick="@(() => Navigation.NavigateTo($"/groups/create?entryIds={string.Join(",", _selectedEntries.Select(e => e.Id))}"))">
+                    Vytvořit novou skupinu
+                </MudMenuItem>
+            </MudMenu>
+        }
+        <MudTextField @bind-Value="_searchText" Placeholder="Hledat..." Variant="Variant.Outlined"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                      Margin="Margin.Dense" Immediate="true" Class="flex-grow-1" />
+    </div>
+
+    @* ── Inline formulář pro přidání ── *@
+    @if (_showAddEntry)
+    {
+        <MudPaper Elevation="1" Class="pa-4 mb-4" Style="border-radius: 12px;">
+            <MudGrid Spacing="2" Class="align-end">
+                <MudItem xs="12" sm="4">
+                    <MudTextField @bind-Value="_newSourceText" Label="@(_sourceLang ?? "Výraz")" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField @bind-Value="_newTargetText" Label="@(_targetLang ?? "Překlad")" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField @bind-Value="_newNotes" Label="Poznámky" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="2" Class="d-flex gap-1">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddEntryAsync"
+                               Size="Size.Small" Style="text-transform: none;">Přidat</MudButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
+                                   OnClick="@(() => _showAddEntry = false)" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+
+    @* ── Tabulka slovíček ── *@
     <MudTable Items="_entries" Hover="true" Striped="true" Elevation="1"
-              Style="border-radius: 12px;" Filter="FilterFunc">
-        <ToolBarContent>
-            <MudTextField @bind-Value="_searchText" Placeholder="Hledat..." Variant="Variant.Outlined"
-                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                          Margin="Margin.Dense" Immediate="true" Class="mt-0" />
-        </ToolBarContent>
+              Style="border-radius: 12px;" MultiSelection="true"
+              @bind-SelectedItems="_selectedEntries" Filter="FilterFunc">
         <HeaderContent>
             <MudTh Style="font-weight: 700;">@(_sourceLang ?? "Výraz")</MudTh>
             <MudTh Style="font-weight: 700;">@(_targetLang ?? "Překlad")</MudTh>
             <MudTh Style="font-weight: 700;">Poznámky</MudTh>
             <MudTh Style="font-weight: 700;">Tagy</MudTh>
+            <MudTh Style="width: 80px;"></MudTh>
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Výraz"><strong>@context.SourceText</strong></MudTd>
@@ -42,6 +102,14 @@ else
                 {
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Primary">@tag.Name</MudChip>
                 }
+            </MudTd>
+            <MudTd Style="white-space: nowrap;">
+                <MudTooltip Text="Upravit">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditEntryAsync(context))" />
+                </MudTooltip>
+                <MudTooltip Text="Smazat">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(() => RemoveEntryAsync(context.Id))" Color="Color.Error" />
+                </MudTooltip>
             </MudTd>
         </RowTemplate>
         <NoRecordsContent>
@@ -57,7 +125,12 @@ else
     [Parameter] public long Id { get; set; }
 
     private List<DictionaryEntryDto> _entries = [];
+    private List<GroupListDto> _userGroups = [];
+    private HashSet<DictionaryEntryDto> _selectedEntries = [];
     private bool _loading = true;
+    private bool _showAddEntry;
+    private string _newSourceText = "", _newTargetText = "";
+    private string? _newNotes;
     private string _searchText = "";
     private string? _sourceLang;
     private string? _targetLang;
@@ -65,6 +138,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         _entries = await WordService.GetEntriesAsync(Id);
+        _userGroups = await GroupService.GetUserGroupsAsync();
 
         var dict = DictState.Dictionaries.FirstOrDefault(d => d.Id == Id);
         if (dict != null)
@@ -79,9 +153,62 @@ else
     private bool FilterFunc(DictionaryEntryDto entry)
     {
         if (string.IsNullOrWhiteSpace(_searchText)) return true;
-        var search = _searchText.ToLower();
-        return entry.SourceText.Contains(search, StringComparison.OrdinalIgnoreCase)
-            || entry.TargetText.Contains(search, StringComparison.OrdinalIgnoreCase)
-            || (entry.Notes?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false);
+        return entry.SourceText.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+            || entry.TargetText.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+            || (entry.Notes?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+
+    private async Task AddToGroupAsync(long groupId)
+    {
+        var count = 0;
+        foreach (var entry in _selectedEntries)
+        {
+            await GroupService.AddEntryToGroupAsync(groupId, entry.Id);
+            count++;
+        }
+        var targetGroup = _userGroups.FirstOrDefault(g => g.Id == groupId);
+        Snackbar.Add($"{count} slovíček přidáno do \"{targetGroup?.Name}\"", Severity.Success);
+        _selectedEntries.Clear();
+    }
+
+    private async Task AddEntryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newSourceText) || string.IsNullOrWhiteSpace(_newTargetText)) return;
+        var entry = await WordService.AddEntryAsync(Id, new CreateEntryDto(_newSourceText, _newTargetText, _newNotes));
+        if (entry != null)
+        {
+            _entries.Add(entry);
+            _newSourceText = "";
+            _newTargetText = "";
+            _newNotes = null;
+            await DictState.LoadAsync();
+            Snackbar.Add("Slovíčko přidáno!", Severity.Success);
+        }
+    }
+
+    private async Task EditEntryAsync(DictionaryEntryDto entry)
+    {
+        var parameters = new DialogParameters<EditEntryDialog> { { x => x.Entry, entry } };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditEntryDialog>("Upravit slovíčko", parameters, options);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+        {
+            var updated = (DictionaryEntryDto)result.Data!;
+            var idx = _entries.FindIndex(e => e.Id == entry.Id);
+            if (idx >= 0) _entries[idx] = updated;
+            Snackbar.Add("Slovíčko upraveno!", Severity.Success);
+        }
+    }
+
+    private async Task RemoveEntryAsync(long entryId)
+    {
+        var result = await DialogService.ShowMessageBox("Smazat slovíčko", "Opravdu?", yesText: "Smazat", cancelText: "Zrušit");
+        if (result == true && await WordService.RemoveEntryAsync(entryId))
+        {
+            _entries.RemoveAll(e => e.Id == entryId);
+            await DictState.LoadAsync();
+            Snackbar.Add("Slovíčko smazáno.", Severity.Success);
+        }
     }
 }

@@ -52,4 +52,10 @@ public class GroupApiService
             ? await response.Content.ReadFromJsonAsync<GroupDto>()
             : null;
     }
+
+    public async Task<bool> AddEntryToGroupAsync(long groupId, long entryId)
+    {
+        var response = await _http.PostAsync($"api/groups/{groupId}/entries/{entryId}", null);
+        return response.IsSuccessStatusCode;
+    }
 }

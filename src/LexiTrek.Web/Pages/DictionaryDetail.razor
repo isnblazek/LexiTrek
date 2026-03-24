@@ -6,6 +6,7 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject DictionaryStateService DictState
 
 <PageTitle>@(_group?.Name ?? "Skupina") - LexiTrek</PageTitle>
 
@@ -118,8 +119,8 @@ else
             }
         </div>
 
-        @* ── Akční lišta ── *@
-        <div class="d-flex gap-2 mb-4">
+        @* ── Akční lišta + vyhledávání ── *@
+        <div class="d-flex align-center gap-2 mb-4 py-2" style="position: sticky; top: 64px; z-index: 10; background: #F8FAFC;">
             @if (_group.IsOwner)
             {
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
@@ -132,6 +133,23 @@ else
                            Style="text-transform: none;">
                     Trénink
                 </MudButton>
+                @if (_selectedEntries.Any())
+                {
+                    <MudMenu Label="@($"Přidat do skupiny ({_selectedEntries.Count})")" Variant="Variant.Filled"
+                             Color="Color.Secondary" Size="Size.Small" StartIcon="@Icons.Material.Filled.CreateNewFolder"
+                             AnchorOrigin="Origin.BottomLeft" Dense="true"
+                             Style="text-transform: none;">
+                        @foreach (var g in _userGroups.Where(g => g.Id != Id))
+                        {
+                            <MudMenuItem OnClick="@(() => AddToGroupAsync(g.Id))">@g.Name</MudMenuItem>
+                        }
+                        <MudDivider />
+                        <MudMenuItem Icon="@Icons.Material.Filled.Add"
+                               OnClick="@(() => Navigation.NavigateTo($"/groups/create?entryIds={string.Join(",", _selectedEntries.Select(e => e.Id))}"))">
+                        Vytvořit novou skupinu
+                    </MudMenuItem>
+                    </MudMenu>
+                }
             }
             else
             {
@@ -141,6 +159,9 @@ else
                     Převzít
                 </MudButton>
             }
+            <MudTextField @bind-Value="_searchText" Placeholder="Hledat..." Variant="Variant.Outlined"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                          Margin="Margin.Dense" Immediate="true" Class="flex-grow-1" />
         </div>
     }
 
@@ -170,7 +191,8 @@ else
 
     @* ── Tabulka slovíček ── *@
     <MudTable Items="_entries" Hover="true" Striped="true" Elevation="1"
-              Style="border-radius: 12px;">
+              Style="border-radius: 12px;" MultiSelection="_group.IsOwner"
+              @bind-SelectedItems="_selectedEntries" Filter="FilterFunc">
         <HeaderContent>
             <MudTh Style="font-weight: 700;">@_group.SourceLangName</MudTh>
             <MudTh Style="font-weight: 700;">@_group.TargetLangName</MudTh>
@@ -214,10 +236,13 @@ else
 
     private GroupDto? _group;
     private List<DictionaryEntryDto> _entries = [];
+    private List<GroupListDto> _userGroups = [];
+    private HashSet<DictionaryEntryDto> _selectedEntries = [];
     private bool _loading = true;
     private bool _showAddEntry;
     private string _newSourceText = "", _newTargetText = "";
     private string? _newNotes;
+    private string _searchText = "";
     private MudForm _form = default!;
     private bool _editing, _saving;
     private string _editName = "";
@@ -227,8 +252,34 @@ else
     protected override async Task OnInitializedAsync()
     {
         _group = await GroupService.GetGroupAsync(Id);
-        if (_group != null) _entries = await WordService.GetEntriesByGroupAsync(Id);
+        if (_group != null)
+        {
+            _entries = await WordService.GetEntriesByGroupAsync(Id);
+            if (_group.IsOwner)
+                _userGroups = await GroupService.GetUserGroupsAsync();
+        }
         _loading = false;
+    }
+
+    private bool FilterFunc(DictionaryEntryDto entry)
+    {
+        if (string.IsNullOrWhiteSpace(_searchText)) return true;
+        return entry.SourceText.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+            || entry.TargetText.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+            || (entry.Notes?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+
+    private async Task AddToGroupAsync(long groupId)
+    {
+        var count = 0;
+        foreach (var entry in _selectedEntries)
+        {
+            await GroupService.AddEntryToGroupAsync(groupId, entry.Id);
+            count++;
+        }
+        var targetGroup = _userGroups.FirstOrDefault(g => g.Id == groupId);
+        Snackbar.Add($"{count} slovíček přidáno do \"{targetGroup?.Name}\"", Severity.Success);
+        _selectedEntries.Clear();
     }
 
     private void StartEdit() { _editName = _group!.Name; _editDescription = _group.Description; _editIsPublic = _group.IsPublic; _editing = true; }
@@ -260,7 +311,7 @@ else
         var result = await DialogService.ShowMessageBox("Smazat skupinu", "Opravdu chcete smazat tuto skupinu?", yesText: "Smazat", cancelText: "Zrušit");
         if (result == true)
         {
-            if (await GroupService.DeleteGroupAsync(Id)) { Snackbar.Add("Skupina smazána.", Severity.Success); Navigation.NavigateTo("/groups"); }
+            if (await GroupService.DeleteGroupAsync(Id)) { await DictState.LoadAsync(); Snackbar.Add("Skupina smazána.", Severity.Success); Navigation.NavigateTo("/groups"); }
             else Snackbar.Add("Chyba při mazání skupiny.", Severity.Error);
         }
     }
@@ -283,7 +334,7 @@ else
     {
         if (string.IsNullOrWhiteSpace(_newSourceText) || string.IsNullOrWhiteSpace(_newTargetText) || _group == null) return;
         var entry = await WordService.AddEntryAsync(_group.DictionaryId, new CreateEntryDto(_newSourceText, _newTargetText, _newNotes), Id);
-        if (entry != null) { _entries.Add(entry); _newSourceText = ""; _newTargetText = ""; _newNotes = null; Snackbar.Add("Slovíčko přidáno!", Severity.Success); }
+        if (entry != null) { _entries.Add(entry); _newSourceText = ""; _newTargetText = ""; _newNotes = null; await DictState.LoadAsync(); Snackbar.Add("Slovíčko přidáno!", Severity.Success); }
     }
 
     private async Task EditEntryAsync(DictionaryEntryDto entry)
@@ -298,6 +349,6 @@ else
     private async Task RemoveEntryAsync(long entryId)
     {
         var result = await DialogService.ShowMessageBox("Smazat slovíčko", "Opravdu?", yesText: "Smazat", cancelText: "Zrušit");
-        if (result == true && await WordService.RemoveEntryAsync(entryId)) { _entries.RemoveAll(e => e.Id == entryId); Snackbar.Add("Slovíčko smazáno.", Severity.Success); }
+        if (result == true && await WordService.RemoveEntryAsync(entryId)) { _entries.RemoveAll(e => e.Id == entryId); await DictState.LoadAsync(); Snackbar.Add("Slovíčko smazáno.", Severity.Success); }
     }
 }
