@@ -62,11 +62,35 @@ else
     {
         @* ── Kompaktní hlavička ── *@
         <div class="d-flex align-center justify-space-between mb-3 mt-4">
-            <div class="d-flex align-center gap-3">
+            <div class="d-flex align-center gap-2">
                 <MudText Typo="Typo.h5" Style="font-weight: 700;">@_group.Name</MudText>
-                <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
-                    @_group.SourceLangName ↔ @_group.TargetLangName
-                </MudChip>
+                <MudMenu Icon="@Icons.Material.Outlined.Info" Size="Size.Small" Color="Color.Default"
+                         AnchorOrigin="Origin.BottomLeft" Dense="true">
+                    <div class="pa-4" style="min-width: 280px;">
+                        <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined" Class="mb-2">
+                            @_group.SourceLangName ↔ @_group.TargetLangName
+                        </MudChip>
+                        <div class="d-flex align-center gap-2 mb-2">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Autor:</MudText>
+                            @if (!_group.IsOwner)
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default"
+                                         Href="@($"/groups/public?search={Uri.EscapeDataString(_group.OwnerDisplayName)}")"
+                                         Icon="@Icons.Material.Filled.Person">
+                                    @_group.OwnerDisplayName
+                                </MudChip>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.caption">@_group.OwnerDisplayName</MudText>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(_group.Description))
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_group.Description</MudText>
+                        }
+                    </div>
+                </MudMenu>
                 @if (_group.IsOwner)
                 {
                     <MudTooltip Text="@(_group.IsPublic ? "Skupina je veřejná — ostatní ji mohou převzít" : "Skupina je soukromá — vidíte ji pouze vy")">
@@ -76,8 +100,9 @@ else
                 }
                 else if (_group.IsPublic)
                 {
-                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled"
-                             Icon="@Icons.Material.Filled.Public">Veřejná</MudChip>
+                    <MudTooltip Text="Veřejná skupina">
+                        <MudIcon Icon="@Icons.Material.Filled.Public" Size="Size.Small" Color="Color.Success" />
+                    </MudTooltip>
                 }
             </div>
             @if (_group.IsOwner)
@@ -93,11 +118,6 @@ else
             }
         </div>
 
-        @if (!string.IsNullOrEmpty(_group.Description))
-        {
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">@_group.Description</MudText>
-        }
-
         @* ── Akční lišta ── *@
         <div class="d-flex gap-2 mb-4">
             @if (_group.IsOwner)
@@ -107,12 +127,20 @@ else
                            Style="text-transform: none;">
                     Přidat slovíčko
                 </MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                           Href="@($"/training/setup?groupId={Id}")" StartIcon="@Icons.Material.Filled.FitnessCenter"
+                           Style="text-transform: none;">
+                    Trénink
+                </MudButton>
             }
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
-                       Href="@($"/training/setup?groupId={Id}")" StartIcon="@Icons.Material.Filled.FitnessCenter"
-                       Style="text-transform: none;">
-                Trénink
-            </MudButton>
+            else
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                           OnClick="ForkGroupAsync" StartIcon="@Icons.Material.Filled.ContentCopy"
+                           Style="text-transform: none;">
+                    Převzít
+                </MudButton>
+            }
         </div>
     }
 
@@ -141,7 +169,7 @@ else
     }
 
     @* ── Tabulka slovíček ── *@
-    <MudTable Items="_entries" Hover="true" Striped="true" Dense="true" Elevation="1"
+    <MudTable Items="_entries" Hover="true" Striped="true" Elevation="1"
               Style="border-radius: 12px;">
         <HeaderContent>
             <MudTh Style="font-weight: 700;">@_group.SourceLangName</MudTh>
@@ -162,7 +190,7 @@ else
             </MudTd>
             @if (_group.IsOwner)
             {
-                <MudTd>
+                <MudTd Style="white-space: nowrap;">
                     <MudTooltip Text="Upravit">
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditEntryAsync(context))" />
                     </MudTooltip>
@@ -234,6 +262,20 @@ else
         {
             if (await GroupService.DeleteGroupAsync(Id)) { Snackbar.Add("Skupina smazána.", Severity.Success); Navigation.NavigateTo("/groups"); }
             else Snackbar.Add("Chyba při mazání skupiny.", Severity.Error);
+        }
+    }
+
+    private async Task ForkGroupAsync()
+    {
+        var result = await GroupService.ForkGroupAsync(Id);
+        if (result != null)
+        {
+            Snackbar.Add("Skupina převzata!", Severity.Success);
+            Navigation.NavigateTo($"/groups/{result.Id}");
+        }
+        else
+        {
+            Snackbar.Add("Nepodařilo se převzít skupinu.", Severity.Error);
         }
     }
 

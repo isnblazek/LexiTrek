@@ -57,7 +57,7 @@ public class GroupsController : ControllerBase
         [FromQuery] string? search, [FromQuery] long? dictionaryId = null,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        return Ok(await _groupService.GetPublicGroupsAsync(new PublicGroupsRequest(search, dictionaryId, page, pageSize)));
+        return Ok(await _groupService.GetPublicGroupsAsync(new PublicGroupsRequest(search, dictionaryId, page, pageSize), UserId));
     }
 
     [HttpPost("{id:long}/fork")]

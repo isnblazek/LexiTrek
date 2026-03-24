@@ -32,6 +32,21 @@ else if (!FilteredGroups.Any())
 else
 {
     <MudGrid Spacing="3">
+        @if (DictState.SelectedDictionaryId.HasValue)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Class="group-card cursor-pointer" Style="border-radius: 12px; border-left: 4px solid #4F46E5;"
+                         @onclick="@(() => Navigation.NavigateTo($"/dictionaries/{DictState.SelectedDictionaryId}/entries"))">
+                    <MudCardContent>
+                        <div class="d-flex align-center justify-space-between mb-1">
+                            <MudText Typo="Typo.h6" Style="font-weight: 600;">Všechna slovíčka</MudText>
+                            <MudIcon Icon="@Icons.Material.Filled.AllInclusive" Size="Size.Small" Color="Color.Primary" />
+                        </div>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@(DictState.SelectedDictionary?.EntryCount ?? 0) slovíček</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
         @foreach (var group in FilteredGroups)
         {
             <MudItem xs="12" sm="6" md="4">

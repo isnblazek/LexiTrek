@@ -7,5 +7,6 @@ public record DictionaryListDto(
     int SourceLangId,
     int TargetLangId,
     string SourceLangName,
-    string TargetLangName
+    string TargetLangName,
+    int EntryCount
 );

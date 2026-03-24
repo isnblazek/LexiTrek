@@ -106,7 +106,7 @@
                                 </MudAvatar>
                                 <div>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">Moje skupiny</MudText>
-                                    <MudText Typo="Typo.h4">@_groups.Count</MudText>
+                                    <MudText Typo="Typo.h4">@_groups.Count()</MudText>
                                 </div>
                             </div>
                         </MudCardContent>
@@ -121,7 +121,7 @@
                                 </MudAvatar>
                                 <div>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">Celkem slovíček</MudText>
-                                    <MudText Typo="Typo.h4">@_groups.Sum(g => g.EntryCount)</MudText>
+                                    <MudText Typo="Typo.h4">@(DictState.SelectedDictionary?.EntryCount ?? 0)</MudText>
                                 </div>
                             </div>
                         </MudCardContent>
@@ -133,6 +133,21 @@
             {
                 <MudText Typo="Typo.h5" Class="mt-8 mb-4">Vaše skupiny</MudText>
                 <MudGrid Spacing="3">
+                    @if (DictState.SelectedDictionaryId.HasValue)
+                    {
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudCard Class="group-card cursor-pointer" Style="border-radius: 12px; border-left: 4px solid #4F46E5;"
+                                     @onclick="@(() => Navigation.NavigateTo($"/dictionaries/{DictState.SelectedDictionaryId}/entries"))">
+                                <MudCardContent>
+                                    <div class="d-flex align-center justify-space-between mb-1">
+                                        <MudText Typo="Typo.h6" Style="font-weight: 600;">Všechna slovíčka</MudText>
+                                        <MudIcon Icon="@Icons.Material.Filled.AllInclusive" Size="Size.Small" Color="Color.Primary" />
+                                    </div>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@(DictState.SelectedDictionary?.EntryCount ?? 0) slovíček</MudText>
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+                    }
                     @foreach (var group in _groups.Take(6))
                     {
                         <MudItem xs="12" sm="6" md="4">
@@ -188,11 +203,16 @@
 </AuthorizeView>
 
 @code {
-    private List<GroupListDto> _groups = [];
+    private List<GroupListDto> _allGroups = [];
     private List<LanguageDto> _languages = [];
     private int _sourceLangId;
     private int _targetLangId;
     private bool _creating;
+
+    private IEnumerable<GroupListDto> _groups =>
+        DictState.SelectedDictionaryId.HasValue
+            ? _allGroups.Where(g => g.DictionaryId == DictState.SelectedDictionaryId.Value)
+            : _allGroups;
 
     [CascadingParameter]
     private Task<AuthenticationState>? AuthState { get; set; }
@@ -205,7 +225,7 @@
             var state = await AuthState;
             if (state.User.Identity?.IsAuthenticated == true)
             {
-                _groups = await GroupService.GetUserGroupsAsync();
+                _allGroups = await GroupService.GetUserGroupsAsync();
 
                 if (!DictState.Dictionaries.Any())
                 {

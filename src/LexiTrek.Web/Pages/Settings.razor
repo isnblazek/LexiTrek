@@ -166,6 +166,12 @@ else
     {
         if (_sourceLangId == 0 || _targetLangId == 0) return;
 
+        if (DictState.Dictionaries.Any(d => d.SourceLangId == _sourceLangId && d.TargetLangId == _targetLangId))
+        {
+            Snackbar.Add("Tento slovník už máte založený.", Severity.Warning);
+            return;
+        }
+
         _creating = true;
 
         var result = await DictionaryService.CreateDictionaryAsync(

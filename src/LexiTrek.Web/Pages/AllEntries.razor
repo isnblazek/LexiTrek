@@ -1,0 +1,87 @@
+@page "/dictionaries/{Id:long}/entries"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject WordApiService WordService
+@inject DictionaryStateService DictState
+
+<PageTitle>Všechna slovíčka - LexiTrek</PageTitle>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else
+{
+    <div class="d-flex align-center justify-space-between mb-3 mt-4">
+        <div class="d-flex align-center gap-2">
+            <MudText Typo="Typo.h5" Style="font-weight: 700;">Všechna slovíčka</MudText>
+            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
+                @_entries.Count slovíček
+            </MudChip>
+        </div>
+    </div>
+
+    <MudTable Items="_entries" Hover="true" Striped="true" Elevation="1"
+              Style="border-radius: 12px;" Filter="FilterFunc">
+        <ToolBarContent>
+            <MudTextField @bind-Value="_searchText" Placeholder="Hledat..." Variant="Variant.Outlined"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                          Margin="Margin.Dense" Immediate="true" Class="mt-0" />
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh Style="font-weight: 700;">@(_sourceLang ?? "Výraz")</MudTh>
+            <MudTh Style="font-weight: 700;">@(_targetLang ?? "Překlad")</MudTh>
+            <MudTh Style="font-weight: 700;">Poznámky</MudTh>
+            <MudTh Style="font-weight: 700;">Tagy</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Výraz"><strong>@context.SourceText</strong></MudTd>
+            <MudTd DataLabel="Překlad">@context.TargetText</MudTd>
+            <MudTd DataLabel="Poznámky"><MudText Typo="Typo.body2" Color="Color.Secondary">@context.Notes</MudText></MudTd>
+            <MudTd DataLabel="Tagy">
+                @foreach (var tag in context.Tags)
+                {
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Primary">@tag.Name</MudChip>
+                }
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <div class="pa-8 text-center">
+                <MudIcon Icon="@Icons.Material.Filled.Inbox" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+                <MudText Color="Color.Secondary">Žádná slovíčka ve slovníku.</MudText>
+            </div>
+        </NoRecordsContent>
+    </MudTable>
+}
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private List<DictionaryEntryDto> _entries = [];
+    private bool _loading = true;
+    private string _searchText = "";
+    private string? _sourceLang;
+    private string? _targetLang;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _entries = await WordService.GetEntriesAsync(Id);
+
+        var dict = DictState.Dictionaries.FirstOrDefault(d => d.Id == Id);
+        if (dict != null)
+        {
+            _sourceLang = dict.SourceLangName;
+            _targetLang = dict.TargetLangName;
+        }
+
+        _loading = false;
+    }
+
+    private bool FilterFunc(DictionaryEntryDto entry)
+    {
+        if (string.IsNullOrWhiteSpace(_searchText)) return true;
+        var search = _searchText.ToLower();
+        return entry.SourceText.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || entry.TargetText.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || (entry.Notes?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+}

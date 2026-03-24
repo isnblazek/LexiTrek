@@ -131,9 +131,9 @@ public class GroupService : IGroupService
         await _db.SaveChangesAsync();
     }
 
-    public async Task<PagedResult<GroupListDto>> GetPublicGroupsAsync(PublicGroupsRequest request)
+    public async Task<PagedResult<GroupListDto>> GetPublicGroupsAsync(PublicGroupsRequest request, string userId)
     {
-        var query = _db.WordGroups.Where(g => g.IsPublic);
+        var query = _db.WordGroups.Where(g => g.IsPublic && g.OwnerId != userId);
 
         if (request.DictionaryId.HasValue)
             query = query.Where(g => g.DictionaryId == request.DictionaryId.Value);

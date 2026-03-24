@@ -100,7 +100,11 @@
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
 
-    private void OnDictionaryChanged(long? newId) => DictState.SetSelectedDictionary(newId);
+    private void OnDictionaryChanged(long? newId)
+    {
+        DictState.SetSelectedDictionary(newId);
+        Navigation.NavigateTo("/");
+    }
 
     private async Task LogoutAsync()
     {

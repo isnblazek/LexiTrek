@@ -1,9 +1,8 @@
 @page "/groups/public"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject GroupApiService GroupService
-@inject DictionaryStateService DictState
+@inject NavigationManager Navigation
 @inject ISnackbar Snackbar
-@implements IDisposable
 
 <PageTitle>Veřejné skupiny - LexiTrek</PageTitle>
 
@@ -30,24 +29,15 @@ else
         @foreach (var group in _result.Items)
         {
             <MudItem xs="12" sm="6" md="4">
-                <MudCard Style="border-radius: 12px;">
+                <MudCard Class="group-card cursor-pointer" Style="border-radius: 12px;"
+                         @onclick="@(() => Navigation.NavigateTo($"/groups/{group.Id}"))">
                     <MudCardContent>
-                        <MudText Typo="Typo.h6" Style="font-weight: 600;">@group.Name</MudText>
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@group.EntryCount slovíček</MudText>
-                        <div class="d-flex align-center gap-2 mt-1">
+                        <div class="d-flex align-center justify-space-between mb-1">
+                            <MudText Typo="Typo.h6" Style="font-weight: 600;">@group.Name</MudText>
                             <MudText Typo="Typo.caption" Color="Color.Secondary">@group.OwnerDisplayName</MudText>
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">@group.SourceLangName ↔ @group.TargetLangName</MudText>
                         </div>
-                        @if (!string.IsNullOrEmpty(group.Description))
-                        {
-                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">@group.Description</MudText>
-                        }
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@group.EntryCount slovíček</MudText>
                     </MudCardContent>
-                    <MudCardActions Class="pa-4 pt-0">
-                        <MudButton Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled"
-                                   OnClick="@(() => ForkAsync(group.Id))" StartIcon="@Icons.Material.Filled.ContentCopy"
-                                   Style="text-transform: none;">Převzít</MudButton>
-                    </MudCardActions>
                 </MudCard>
             </MudItem>
         }
@@ -66,30 +56,24 @@ else
     private bool _loading = true;
     private int _page = 1;
 
+    [SupplyParameterFromQuery(Name = "search")]
+    public string? InitialSearch { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
-        DictState.OnChange += OnDictionaryChanged;
+        if (!string.IsNullOrWhiteSpace(InitialSearch))
+            _search = InitialSearch;
         await LoadAsync();
     }
 
     private async Task LoadAsync()
     {
         _loading = true;
-        _result = await GroupService.GetPublicGroupsAsync(_search, _page, DictState.SelectedDictionaryId);
+        _result = await GroupService.GetPublicGroupsAsync(_search, _page);
         _loading = false;
     }
-
-    private async void OnDictionaryChanged() { _page = 1; await LoadAsync(); await InvokeAsync(StateHasChanged); }
 
     private async Task HandleSearch(KeyboardEventArgs e) { if (e.Key == "Enter") { _page = 1; await LoadAsync(); } }
     private async Task PageChanged(int page) { _page = page; await LoadAsync(); }
 
-    private async Task ForkAsync(long groupId)
-    {
-        var result = await GroupService.ForkGroupAsync(groupId);
-        if (result != null) { await DictState.LoadAsync(); Snackbar.Add("Skupina převzata!", Severity.Success); }
-        else Snackbar.Add("Nepodařilo se převzít skupinu.", Severity.Error);
-    }
-
-    public void Dispose() => DictState.OnChange -= OnDictionaryChanged;
 }

@@ -9,7 +9,7 @@ public interface IGroupService
     Task<GroupDto> CreateGroupAsync(CreateGroupDto dto, string userId);
     Task<GroupDto> UpdateGroupAsync(long id, UpdateGroupDto dto, string userId);
     Task DeleteGroupAsync(long id, string userId);
-    Task<PagedResult<GroupListDto>> GetPublicGroupsAsync(PublicGroupsRequest request);
+    Task<PagedResult<GroupListDto>> GetPublicGroupsAsync(PublicGroupsRequest request, string userId);
     Task<GroupDto> ForkGroupAsync(long sourceGroupId, string userId);
     Task AddEntryToGroupAsync(long groupId, long entryId, string userId);
     Task RemoveEntryFromGroupAsync(long groupId, long entryId, string userId);

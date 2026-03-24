@@ -20,12 +20,18 @@ public class DictionaryService : IDictionaryService
             .Include(d => d.TargetLang)
             .Select(d => new DictionaryListDto(
                 d.Id, d.SourceLangId, d.TargetLangId,
-                d.SourceLang.Name, d.TargetLang.Name))
+                d.SourceLang.Name, d.TargetLang.Name,
+                d.Entries.Count(e => e.IsActive)))
             .ToListAsync();
     }
 
     public async Task<DictionaryListDto> CreateDictionaryAsync(CreateDictionaryDto dto, string userId)
     {
+        var exists = await _db.Dictionaries.AnyAsync(d =>
+            d.UserId == userId && d.SourceLangId == dto.SourceLangId && d.TargetLangId == dto.TargetLangId);
+        if (exists)
+            throw new InvalidOperationException("Tento slovník už máte založený");
+
         var dictionary = new Dictionary
         {
             UserId = userId,
@@ -42,7 +48,7 @@ public class DictionaryService : IDictionaryService
 
         return new DictionaryListDto(
             dictionary.Id, dictionary.SourceLangId, dictionary.TargetLangId,
-            sourceLang!.Name, targetLang!.Name);
+            sourceLang!.Name, targetLang!.Name, 0);
     }
 
     public async Task DeleteDictionaryAsync(long id, string userId)

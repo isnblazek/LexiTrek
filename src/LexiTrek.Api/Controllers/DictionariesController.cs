@@ -26,8 +26,12 @@ public class DictionariesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<DictionaryListDto>> CreateDictionary(CreateDictionaryDto dto)
     {
-        var result = await _dictionaryService.CreateDictionaryAsync(dto, UserId);
-        return Created($"api/dictionaries/{result.Id}", result);
+        try
+        {
+            var result = await _dictionaryService.CreateDictionaryAsync(dto, UserId);
+            return Created($"api/dictionaries/{result.Id}", result);
+        }
+        catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
     [HttpDelete("{id:long}")]
