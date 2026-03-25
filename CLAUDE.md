@@ -128,7 +128,7 @@ Clean Architecture — Blazor WebAssembly frontend hostovaný přes ASP.NET Core
   - Sticky akční lišta: přidat slovíčko, trénink, přidat do skupiny (po checkboxu), vyhledávání (flex-grow)
   - Checkboxy pro hromadný výběr s "Přidat do skupiny" menu (existující + nová)
   - Inline formulář pro přidání slovíčka
-  - Cizí skupina: tlačítko "Převzít" místo přidat/trénink, autor chip s proklikem
+  - Cizí skupina: "Převzít vše" (fork celé skupiny) + checkboxy s "Převzít vybraná" do vlastní skupiny. Bez editace/smazání slovíček a skupiny, bez switch veřejná/soukromá. Autor chip s proklikem na veřejné skupiny.
 - **Virtuální skupina "Všechna slovíčka":** Vždy první v seznamu skupin (i bez vlastních skupin). Počet = unikátní entries ze serveru (DictionaryListDto.EntryCount).
 - **Settings:** Dropdown menu v AppBar. Atraktivní stránka — onboarding styl (bez slovníků) / kompaktní formulář + grid (se slovníky). Filtr cílového jazyka (nesmí být stejný jako zdrojový).
 - **Formuláře:** Atraktivní karty se zaoblenými rohy, ikony v inputech, switch veřejná/soukromá s vysvětlením

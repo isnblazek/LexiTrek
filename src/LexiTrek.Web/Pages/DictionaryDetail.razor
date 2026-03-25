@@ -156,8 +156,22 @@ else
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
                            OnClick="ForkGroupAsync" StartIcon="@Icons.Material.Filled.ContentCopy"
                            Style="text-transform: none;">
-                    Převzít
+                    Převzít vše
                 </MudButton>
+                @if (_selectedEntries.Any())
+                {
+                    <MudMenu Label="@($"Převzít vybraná ({_selectedEntries.Count})")" Variant="Variant.Filled"
+                             Color="Color.Secondary" Size="Size.Small" StartIcon="@Icons.Material.Filled.ContentCopy"
+                             AnchorOrigin="Origin.BottomLeft" Dense="true"
+                             Style="text-transform: none;">
+                        @foreach (var g in _userGroups)
+                        {
+                            <MudMenuItem OnClick="@(() => AdoptSelectedToGroupAsync(g.Id))">@g.Name</MudMenuItem>
+                        }
+                        <MudDivider />
+                        <MudMenuItem Icon="@Icons.Material.Filled.Add" Href="/groups/create">Vytvořit novou skupinu</MudMenuItem>
+                    </MudMenu>
+                }
             }
             <MudTextField @bind-Value="_searchText" Placeholder="Hledat..." Variant="Variant.Outlined"
                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
@@ -191,7 +205,7 @@ else
 
     @* ── Tabulka slovíček ── *@
     <MudTable Items="_entries" Hover="true" Striped="true" Elevation="1"
-              Style="border-radius: 12px;" MultiSelection="_group.IsOwner"
+              Style="border-radius: 12px;" MultiSelection="true"
               @bind-SelectedItems="_selectedEntries" Filter="FilterFunc">
         <HeaderContent>
             <MudTh Style="font-weight: 700;">@_group.SourceLangName</MudTh>
@@ -255,8 +269,7 @@ else
         if (_group != null)
         {
             _entries = await WordService.GetEntriesByGroupAsync(Id);
-            if (_group.IsOwner)
-                _userGroups = await GroupService.GetUserGroupsAsync();
+            _userGroups = await GroupService.GetUserGroupsAsync();
         }
         _loading = false;
     }
@@ -267,6 +280,23 @@ else
         return entry.SourceText.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
             || entry.TargetText.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
             || (entry.Notes?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+
+    private async Task AdoptSelectedToGroupAsync(long groupId)
+    {
+        var targetGroup = _userGroups.FirstOrDefault(g => g.Id == groupId);
+        var dictId = targetGroup?.DictionaryId ?? DictState.SelectedDictionaryId;
+        if (!dictId.HasValue) return;
+
+        var count = 0;
+        foreach (var entry in _selectedEntries)
+        {
+            await WordService.AddEntryAsync(dictId.Value, new CreateEntryDto(entry.SourceText, entry.TargetText, entry.Notes), groupId);
+            count++;
+        }
+        await DictState.LoadAsync();
+        Snackbar.Add($"{count} slovíček převzato do \"{targetGroup?.Name}\"", Severity.Success);
+        _selectedEntries.Clear();
     }
 
     private async Task AddToGroupAsync(long groupId)
