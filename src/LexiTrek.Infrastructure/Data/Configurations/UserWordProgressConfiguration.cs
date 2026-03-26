@@ -14,6 +14,9 @@ public class UserWordProgressConfiguration : IEntityTypeConfiguration<UserWordPr
         builder.Property(p => p.EaseFactor).HasDefaultValue(2.5);
         builder.Property(p => p.IntervalDays).HasDefaultValue(1);
         builder.Property(p => p.Repetitions).HasDefaultValue(0);
+        builder.Property(p => p.TotalReviews).HasDefaultValue(0);
+        builder.Property(p => p.CorrectCount).HasDefaultValue(0);
+        builder.Property(p => p.IncorrectCount).HasDefaultValue(0);
 
         builder.HasOne(p => p.User)
             .WithMany(u => u.UserWordProgresses)

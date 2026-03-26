@@ -37,5 +37,9 @@ public static class SpacedRepetitionService
 
         progress.NextReview = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(progress.IntervalDays);
         progress.LastReviewedAt = DateTime.UtcNow;
+
+        progress.TotalReviews++;
+        if (result == TrainingResultType.Green) progress.CorrectCount++;
+        else if (result == TrainingResultType.Red) progress.IncorrectCount++;
     }
 }

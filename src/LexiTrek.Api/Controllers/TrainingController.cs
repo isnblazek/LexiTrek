@@ -17,11 +17,23 @@ public class TrainingController : ControllerBase
 
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
+    [HttpGet("stats")]
+    public async Task<ActionResult<TrainingStatsDto>> GetStats([FromQuery] long? dictionaryId)
+    {
+        return Ok(await _trainingService.GetTrainingStatsAsync(dictionaryId, UserId));
+    }
+
+    [HttpGet("error-entries")]
+    public async Task<ActionResult<List<ErrorEntryDto>>> GetErrorEntries([FromQuery] long? dictionaryId)
+    {
+        return Ok(await _trainingService.GetErrorEntriesAsync(dictionaryId, UserId));
+    }
+
     [HttpGet("words")]
     public async Task<ActionResult<List<TrainingWordDto>>> GetTrainingWords(
-        [FromQuery] long? groupId, [FromQuery] long? tagId, [FromQuery] int count = 20)
+        [FromQuery] long? groupId, [FromQuery] long? tagId, [FromQuery] int count = 20, [FromQuery] string? filter = null)
     {
-        try { return Ok(await _trainingService.GetTrainingWordsAsync(groupId, tagId, count, UserId)); }
+        try { return Ok(await _trainingService.GetTrainingWordsAsync(groupId, tagId, count, UserId, filter)); }
         catch (KeyNotFoundException) { return NotFound(); }
         catch (UnauthorizedAccessException) { return Forbid(); }
         catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }

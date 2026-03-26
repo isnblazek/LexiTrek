@@ -14,7 +14,7 @@ public class TrainingService : ITrainingService
 
     public TrainingService(AppDbContext db) => _db = db;
 
-    public async Task<List<TrainingWordDto>> GetTrainingWordsAsync(long? groupId, long? tagId, int count, string userId)
+    public async Task<List<TrainingWordDto>> GetTrainingWordsAsync(long? groupId, long? tagId, int count, string userId, string? filter = null)
     {
         IQueryable<DictionaryEntry> entryQuery;
 
@@ -58,7 +58,16 @@ public class TrainingService : ITrainingService
             .OrderBy(kv => kv.Value.NextReview)
             .Select(kv => kv.Key).ToList();
 
-        var selectedIds = newIds.Concat(dueIds).Take(count).ToList();
+        var selectedIds = filter switch
+        {
+            "errors" => progressMap
+                .Where(kv => kv.Value.TotalReviews >= 2 && (double)kv.Value.IncorrectCount / kv.Value.TotalReviews > 0.3)
+                .OrderByDescending(kv => (double)kv.Value.IncorrectCount / kv.Value.TotalReviews)
+                .Select(kv => kv.Key)
+                .Take(count).ToList(),
+            "new" => newIds.Take(count).ToList(),
+            _ => newIds.Concat(dueIds).Take(count).ToList()
+        };
 
         if (groupId.HasValue)
         {
@@ -81,6 +90,63 @@ public class TrainingService : ITrainingService
                 e.WordPairId, e.WordPair.SourceWord.Text, e.WordPair.TargetWord.Text,
                 e.Notes, 0, ""))
             .ToListAsync();
+    }
+
+    public async Task<TrainingStatsDto> GetTrainingStatsAsync(long? dictionaryId, string userId)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var entryQuery = _db.DictionaryEntries
+            .Where(e => e.IsActive && e.Dictionary.UserId == userId);
+        if (dictionaryId.HasValue)
+            entryQuery = entryQuery.Where(e => e.DictionaryId == dictionaryId.Value);
+
+        var wordPairIds = await entryQuery.Select(e => e.WordPairId).Distinct().ToListAsync();
+
+        var progressQuery = _db.UserWordProgresses
+            .Where(p => p.UserId == userId && wordPairIds.Contains(p.WordPairId));
+
+        var totalReviewedCount = await progressQuery.CountAsync();
+        var dueCount = await progressQuery.CountAsync(p => p.NextReview <= today);
+        var errorWordCount = await progressQuery.CountAsync(p => p.TotalReviews >= 2 && (double)p.IncorrectCount / p.TotalReviews > 0.3);
+        var newCount = wordPairIds.Count - totalReviewedCount;
+
+        return new TrainingStatsDto(dueCount, newCount, errorWordCount, totalReviewedCount);
+    }
+
+    public async Task<List<ErrorEntryDto>> GetErrorEntriesAsync(long? dictionaryId, string userId)
+    {
+        var entryQuery = _db.DictionaryEntries
+            .Where(e => e.IsActive && e.Dictionary.UserId == userId);
+        if (dictionaryId.HasValue)
+            entryQuery = entryQuery.Where(e => e.DictionaryId == dictionaryId.Value);
+
+        var entries = await entryQuery
+            .Include(e => e.WordPair).ThenInclude(wp => wp.SourceWord)
+            .Include(e => e.WordPair).ThenInclude(wp => wp.TargetWord)
+            .ToListAsync();
+
+        var wordPairIds = entries.Select(e => e.WordPairId).Distinct().ToList();
+        var progressMap = await _db.UserWordProgresses
+            .Where(p => p.UserId == userId && wordPairIds.Contains(p.WordPairId))
+            .ToDictionaryAsync(p => p.WordPairId);
+
+        return entries
+            .Where(e => progressMap.TryGetValue(e.WordPairId, out var p)
+                && p.TotalReviews >= 2
+                && (double)p.IncorrectCount / p.TotalReviews > 0.3)
+            .Select(e =>
+            {
+                var p = progressMap[e.WordPairId];
+                return new ErrorEntryDto(
+                    e.Id, e.WordPairId,
+                    e.WordPair.SourceWord.Text, e.WordPair.TargetWord.Text,
+                    e.Notes, p.TotalReviews, p.CorrectCount, p.IncorrectCount,
+                    Math.Round((double)p.IncorrectCount / p.TotalReviews * 100, 1),
+                    p.LastReviewedAt);
+            })
+            .OrderByDescending(e => e.ErrorRate)
+            .ToList();
     }
 
     public async Task<SessionDto> StartSessionAsync(StartSessionDto dto, string userId)

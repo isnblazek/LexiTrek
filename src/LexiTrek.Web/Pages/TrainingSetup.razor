@@ -13,16 +13,26 @@
 <MudText Typo="Typo.h5" Style="font-weight: 700;" Class="mt-4 mb-4">Nastavení tréninku</MudText>
 
 <MudContainer MaxWidth="MaxWidth.Small">
-    <MudCard>
-        <MudCardContent>
-            <MudRadioGroup @bind-Value="_mode">
-                <MudRadio Value="0" Color="Color.Primary">Podle skupiny</MudRadio>
-                <MudRadio Value="1" Color="Color.Primary">Podle tagu</MudRadio>
-            </MudRadioGroup>
+    <MudCard Class="pa-2">
+        <MudCardContent Class="pb-2">
+            @if (!string.IsNullOrEmpty(_filter))
+            {
+                <MudChip T="string" Color="@(_filter == "errors" ? Color.Error : Color.Info)"
+                         OnClose="@(() => _filter = null)" Class="mb-2">
+                    @(_filter == "errors" ? "Problematická slovíčka" : "Nová slovíčka")
+                </MudChip>
+            }
+
+            <div class="d-flex gap-4">
+                <MudRadioGroup @bind-Value="_mode" Class="d-flex flex-row gap-2">
+                    <MudRadio Value="0" Color="Color.Primary" Dense="true">Podle skupiny</MudRadio>
+                    <MudRadio Value="1" Color="Color.Primary" Dense="true">Podle tagu</MudRadio>
+                </MudRadioGroup>
+            </div>
 
             @if (_mode == 0)
             {
-                <MudSelect @bind-Value="_selectedGroupId" Label="Vyberte skupinu" Variant="Variant.Outlined" Class="mt-4">
+                <MudSelect @bind-Value="_selectedGroupId" Label="Vyberte skupinu" Variant="Variant.Outlined" Class="mt-2" Dense="true" Margin="Margin.Dense">
                     @foreach (var group in FilteredGroups)
                     {
                         <MudSelectItem Value="group.Id">@group.Name (@group.EntryCount slovíček)</MudSelectItem>
@@ -31,7 +41,7 @@
             }
             else
             {
-                <MudSelect @bind-Value="_selectedTagId" Label="Vyberte tag" Variant="Variant.Outlined" Class="mt-4">
+                <MudSelect @bind-Value="_selectedTagId" Label="Vyberte tag" Variant="Variant.Outlined" Class="mt-2" Dense="true" Margin="Margin.Dense">
                     @foreach (var tag in _tags)
                     {
                         <MudSelectItem Value="tag.Id">@tag.Name</MudSelectItem>
@@ -39,9 +49,20 @@
                 </MudSelect>
             }
 
-            <MudNumericField @bind-Value="_count" Label="Počet slovíček" Variant="Variant.Outlined" Class="mt-4" Min="5" Max="50" />
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3 mb-1">Počet slovíček</MudText>
+            <div class="d-flex gap-2">
+                @foreach (var c in new[] { 10, 20, 30, 40, 50 })
+                {
+                    <MudButton Variant="@(_count == c ? Variant.Filled : Variant.Outlined)"
+                               Color="Color.Primary" Size="Size.Small"
+                               OnClick="@(() => _count = c)"
+                               Style="min-width: 52px;">
+                        @c
+                    </MudButton>
+                }
+            </div>
         </MudCardContent>
-        <MudCardActions>
+        <MudCardActions Class="pt-0">
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartTrainingAsync" Disabled="_loading" FullWidth="true">Začít trénink</MudButton>
         </MudCardActions>
     </MudCard>
@@ -52,6 +73,7 @@
     private long _selectedGroupId, _selectedTagId;
     private int _count = 20;
     private bool _loading;
+    private string? _filter;
     private List<GroupListDto> _groups = [];
     private List<TagDto> _tags = [];
 
@@ -63,11 +85,16 @@
     [SupplyParameterFromQuery(Name = "groupId")]
     public string? PreselectedGroupId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "filter")]
+    public string? PreselectedFilter { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         DictState.OnChange += OnDictionaryChanged;
         _groups = await GroupService.GetUserGroupsAsync();
         _tags = await TagService.GetTagsAsync();
+
+        _filter = PreselectedFilter;
 
         if (long.TryParse(PreselectedGroupId, out var gid)) { _selectedGroupId = gid; _mode = 0; }
         else if (FilteredGroups.Any()) _selectedGroupId = FilteredGroups.First().Id;
@@ -82,11 +109,11 @@
         long? groupId = _mode == 0 ? _selectedGroupId : null;
         long? tagId = _mode == 1 ? _selectedTagId : null;
 
-        var words = await TrainingService.GetTrainingWordsAsync(groupId, tagId, _count);
+        var words = await TrainingService.GetTrainingWordsAsync(groupId, tagId, _count, _filter);
         if (!words.Any()) { Snackbar.Add("Žádná slovíčka k tréninku.", Severity.Warning); _loading = false; return; }
 
         var session = await TrainingService.StartSessionAsync(new StartSessionDto(_mode, groupId, tagId));
-        if (session != null) Navigation.NavigateTo($"/training/{session.Id}?groupId={groupId}&tagId={tagId}&count={_count}");
+        if (session != null) Navigation.NavigateTo($"/training/{session.Id}?groupId={groupId}&tagId={tagId}&count={_count}&filter={_filter}");
         else Snackbar.Add("Chyba při zahájení tréninku.", Severity.Error);
         _loading = false;
     }

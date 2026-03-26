@@ -9,11 +9,28 @@ public class TrainingApiService
 
     public TrainingApiService(HttpClient http) => _http = http;
 
-    public async Task<List<TrainingWordDto>> GetTrainingWordsAsync(long? groupId, long? tagId, int count = 20)
+    public async Task<TrainingStatsDto?> GetStatsAsync(long? dictionaryId)
+    {
+        var url = "api/training/stats";
+        if (dictionaryId.HasValue) url += $"?dictionaryId={dictionaryId}";
+        try { return await _http.GetFromJsonAsync<TrainingStatsDto>(url); }
+        catch { return null; }
+    }
+
+    public async Task<List<ErrorEntryDto>> GetErrorEntriesAsync(long? dictionaryId)
+    {
+        var url = "api/training/error-entries";
+        if (dictionaryId.HasValue) url += $"?dictionaryId={dictionaryId}";
+        try { return await _http.GetFromJsonAsync<List<ErrorEntryDto>>(url) ?? []; }
+        catch { return []; }
+    }
+
+    public async Task<List<TrainingWordDto>> GetTrainingWordsAsync(long? groupId, long? tagId, int count = 20, string? filter = null)
     {
         var url = $"api/training/words?count={count}";
         if (groupId.HasValue) url += $"&groupId={groupId}";
         if (tagId.HasValue) url += $"&tagId={tagId}";
+        if (!string.IsNullOrEmpty(filter)) url += $"&filter={filter}";
         return await _http.GetFromJsonAsync<List<TrainingWordDto>>(url) ?? [];
     }
 

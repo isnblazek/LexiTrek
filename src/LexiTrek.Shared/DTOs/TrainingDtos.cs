@@ -40,3 +40,23 @@ public record WordResultDto(
     string TargetText,
     int Result
 );
+
+public record TrainingStatsDto(
+    int DueCount,
+    int NewCount,
+    int ErrorWordCount,
+    int TotalReviewedCount
+);
+
+public record ErrorEntryDto(
+    long EntryId,
+    long WordPairId,
+    string SourceText,
+    string TargetText,
+    string? Notes,
+    int TotalReviews,
+    int CorrectCount,
+    int IncorrectCount,
+    double ErrorRate,
+    DateTime? LastReviewedAt
+);

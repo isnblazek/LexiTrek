@@ -79,6 +79,9 @@ else if (_currentIndex < _words.Count)
     [SupplyParameterFromQuery(Name = "count")]
     public int Count { get; set; } = 20;
 
+    [SupplyParameterFromQuery(Name = "filter")]
+    public string? Filter { get; set; }
+
     private List<TrainingWordDto> _words = [];
     private List<TrainingResultDto> _results = [];
     private int _currentIndex;
@@ -90,7 +93,7 @@ else if (_currentIndex < _words.Count)
         long? groupId = long.TryParse(GroupIdStr, out var did) ? did : null;
         long? tagId = long.TryParse(TagIdStr, out var tid) ? tid : null;
 
-        _words = await TrainingService.GetTrainingWordsAsync(groupId, tagId, Count);
+        _words = await TrainingService.GetTrainingWordsAsync(groupId, tagId, Count, Filter);
         _loading = false;
     }
 

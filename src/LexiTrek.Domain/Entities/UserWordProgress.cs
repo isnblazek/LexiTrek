@@ -9,6 +9,9 @@ public class UserWordProgress
     public int Repetitions { get; set; }
     public DateOnly NextReview { get; set; }
     public DateTime? LastReviewedAt { get; set; }
+    public int TotalReviews { get; set; }
+    public int CorrectCount { get; set; }
+    public int IncorrectCount { get; set; }
 
     public AppUser User { get; set; } = null!;
     public WordPair WordPair { get; set; } = null!;

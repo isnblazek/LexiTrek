@@ -3,6 +3,7 @@
 @inject DictionaryApiService DictionaryService
 @inject LanguageApiService LanguageService
 @inject DictionaryStateService DictState
+@inject TrainingApiService TrainingService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @implements IDisposable
@@ -90,8 +91,8 @@
                                     <MudIcon Icon="@Icons.Material.Filled.FitnessCenter" />
                                 </MudAvatar>
                                 <div>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Trénink</MudText>
-                                    <MudText Typo="Typo.body1" Style="font-weight: 600;">Procvičte si slovíčka</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">K opakování</MudText>
+                                    <MudText Typo="Typo.h4">@(_stats?.DueCount ?? 0)</MudText>
                                 </div>
                             </div>
                         </MudCardContent>
@@ -127,6 +128,36 @@
                         </MudCardContent>
                     </MudCard>
                 </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudCard Class="stat-card stat-card-error pa-4 cursor-pointer" @onclick="@(() => Navigation.NavigateTo("/training/setup?filter=errors"))">
+                        <MudCardContent>
+                            <div class="d-flex align-center gap-4">
+                                <MudAvatar Color="Color.Error" Variant="Variant.Filled" Size="Size.Large">
+                                    <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" />
+                                </MudAvatar>
+                                <div>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Problematická slovíčka</MudText>
+                                    <MudText Typo="Typo.h4">@(_stats?.ErrorWordCount ?? 0)</MudText>
+                                </div>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudCard Class="stat-card stat-card-new pa-4 cursor-pointer" @onclick="@(() => Navigation.NavigateTo("/training/setup?filter=new"))">
+                        <MudCardContent>
+                            <div class="d-flex align-center gap-4">
+                                <MudAvatar Style="background: #8B5CF6; color: white;" Variant="Variant.Filled" Size="Size.Large">
+                                    <MudIcon Icon="@Icons.Material.Filled.NewReleases" />
+                                </MudAvatar>
+                                <div>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Nová slovíčka</MudText>
+                                    <MudText Typo="Typo.h4">@(_stats?.NewCount ?? 0)</MudText>
+                                </div>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
             </MudGrid>
 
             @if (_groups.Any())
@@ -136,7 +167,7 @@
                     @if (DictState.SelectedDictionaryId.HasValue)
                     {
                         <MudItem xs="12" sm="6" md="4">
-                            <MudCard Class="group-card cursor-pointer" Style="border-radius: 12px; border-left: 4px solid #4F46E5;"
+                            <MudCard Class="group-card cursor-pointer" Style="border-radius: 12px; border-left: 4px solid #4F46E5; background: #EEF2FF;"
                                      @onclick="@(() => Navigation.NavigateTo($"/dictionaries/{DictState.SelectedDictionaryId}/entries"))">
                                 <MudCardContent>
                                     <div class="d-flex align-center justify-space-between mb-1">
@@ -144,6 +175,19 @@
                                         <MudIcon Icon="@Icons.Material.Filled.AllInclusive" Size="Size.Small" Color="Color.Primary" />
                                     </div>
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">@(DictState.SelectedDictionary?.EntryCount ?? 0) slovíček</MudText>
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudCard Class="group-card cursor-pointer" Style="border-radius: 12px; border-left: 4px solid #EF4444; background: #FEF2F2;"
+                                     @onclick="@(() => Navigation.NavigateTo("/training/errors"))">
+                                <MudCardContent>
+                                    <div class="d-flex align-center justify-space-between mb-1">
+                                        <MudText Typo="Typo.h6" Style="font-weight: 600;">Problematická slovíčka</MudText>
+                                        <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Small" Color="Color.Error" />
+                                    </div>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@(_stats?.ErrorWordCount ?? 0) slovíček</MudText>
                                 </MudCardContent>
                             </MudCard>
                         </MudItem>
@@ -205,6 +249,7 @@
 @code {
     private List<GroupListDto> _allGroups = [];
     private List<LanguageDto> _languages = [];
+    private TrainingStatsDto? _stats;
     private int _sourceLangId;
     private int _targetLangId;
     private bool _creating;
@@ -226,6 +271,7 @@
             if (state.User.Identity?.IsAuthenticated == true)
             {
                 _allGroups = await GroupService.GetUserGroupsAsync();
+                _stats = await TrainingService.GetStatsAsync(DictState.SelectedDictionaryId);
 
                 if (!DictState.Dictionaries.Any())
                 {

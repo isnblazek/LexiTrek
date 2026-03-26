@@ -137,6 +137,14 @@ h1:focus {
     border-left: 4px solid #F59E0B !important;
 }
 
+.stat-card-error {
+    border-left: 4px solid #EF4444 !important;
+}
+
+.stat-card-new {
+    border-left: 4px solid #8B5CF6 !important;
+}
+
 /* ── Group cards ──────────────────────────────────── */
 .group-card {
     border: 1px solid #E2E8F0 !important;
