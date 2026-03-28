@@ -1,0 +1,71 @@
+@inject TrainingApiService TrainingService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">Počet slovíček</MudText>
+        <div class="d-flex gap-2 flex-wrap">
+            <MudButton Variant="@(_count == null ? Variant.Filled : Variant.Outlined)"
+                       Color="Color.Primary" Size="Size.Small"
+                       OnClick="@(() => _count = null)"
+                       Style="min-width: 52px;">
+                Vše
+            </MudButton>
+            @foreach (var c in new[] { 10, 20, 30, 40, 50 })
+            {
+                <MudButton Variant="@(_count == c ? Variant.Filled : Variant.Outlined)"
+                           Color="Color.Primary" Size="Size.Small"
+                           OnClick="@(() => _count = c)"
+                           Style="min-width: 52px;">
+                    @c
+                </MudButton>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Style="text-transform: none;">Zrušit</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartAsync"
+                   Disabled="_loading" Style="text-transform: none;">
+            @if (_loading) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+            Začít trénink
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public long? GroupId { get; set; }
+
+    private int? _count = 20;
+    private bool _loading;
+
+    private async Task StartAsync()
+    {
+        _loading = true;
+        var count = _count ?? 9999;
+        var words = await TrainingService.GetTrainingWordsAsync(GroupId, null, count, null);
+        if (!words.Any())
+        {
+            Snackbar.Add("Žádná slovíčka k tréninku.", Severity.Warning);
+            _loading = false;
+            return;
+        }
+
+        var session = await TrainingService.StartSessionAsync(new StartSessionDto(0, GroupId, null));
+        if (session != null)
+        {
+            MudDialog.Close();
+            var url = $"/training/{session.Id}?count={count}";
+            if (GroupId.HasValue) url += $"&groupId={GroupId}";
+            Navigation.NavigateTo(url);
+        }
+        else
+        {
+            Snackbar.Add("Chyba při zahájení tréninku.", Severity.Error);
+        }
+        _loading = false;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

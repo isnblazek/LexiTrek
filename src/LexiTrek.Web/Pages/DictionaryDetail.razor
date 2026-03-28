@@ -6,6 +6,7 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject TrainingApiService TrainingService
 @inject DictionaryStateService DictState
 
 <PageTitle>@(_group?.Name ?? "Skupina") - LexiTrek</PageTitle>
@@ -129,7 +130,7 @@ else
                     Přidat slovíčko
                 </MudButton>
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
-                           Href="@($"/training/setup?groupId={Id}")" StartIcon="@Icons.Material.Filled.FitnessCenter"
+                           OnClick="OpenTrainingDialogAsync" StartIcon="@Icons.Material.Filled.FitnessCenter"
                            Style="text-transform: none;">
                     Trénink
                 </MudButton>
@@ -374,6 +375,13 @@ else
         var dialog = await DialogService.ShowAsync<EditEntryDialog>("Upravit slovíčko", parameters, options);
         var result = await dialog.Result;
         if (!result!.Canceled) { var updated = (DictionaryEntryDto)result.Data!; var idx = _entries.FindIndex(e => e.Id == entry.Id); if (idx >= 0) _entries[idx] = updated; Snackbar.Add("Slovíčko upraveno!", Severity.Success); }
+    }
+
+    private async Task OpenTrainingDialogAsync()
+    {
+        var parameters = new DialogParameters<TrainingStartDialog> { { x => x.GroupId, Id } };
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        await DialogService.ShowAsync<TrainingStartDialog>("Trénink", parameters, options);
     }
 
     private async Task RemoveEntryAsync(long entryId)
