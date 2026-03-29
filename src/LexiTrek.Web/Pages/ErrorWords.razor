@@ -2,6 +2,7 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject TrainingApiService TrainingService
 @inject DictionaryStateService DictState
+@inject IDialogService DialogService
 @inject NavigationManager Navigation
 @implements IDisposable
 
@@ -22,27 +23,64 @@ else
 
     <div class="d-flex align-center gap-2 mb-4 py-2" style="position: sticky; top: 64px; z-index: 10; background: #F8FAFC;">
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
-                   Href="/training/setup?filter=errors" StartIcon="@Icons.Material.Filled.FitnessCenter"
+                   OnClick="OpenTrainingDialogAsync" StartIcon="@Icons.Material.Filled.FitnessCenter"
                    Style="text-transform: none;">
-            Trénovat chyby
+            Trénink
         </MudButton>
         <MudTextField @bind-Value="_searchText" Placeholder="Hledat..." Variant="Variant.Outlined"
                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
                       Margin="Margin.Dense" Immediate="true" Class="flex-grow-1" />
+        <MudMenu Icon="@Icons.Material.Filled.FilterList" Size="Size.Small" Dense="true"
+                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+                 CloseOnContentClick="false">
+            <MudMenuItem OnClick="@(() => _searchSource = !_searchSource)">
+                <div class="d-flex align-center gap-2">
+                    <MudCheckBox T="bool" Value="_searchSource" Color="Color.Primary" Dense="true" Class="ma-0" />
+                    <MudText Typo="Typo.body2">@_sourceLang</MudText>
+                </div>
+            </MudMenuItem>
+            <MudMenuItem OnClick="@(() => _searchTarget = !_searchTarget)">
+                <div class="d-flex align-center gap-2">
+                    <MudCheckBox T="bool" Value="_searchTarget" Color="Color.Primary" Dense="true" Class="ma-0" />
+                    <MudText Typo="Typo.body2">@_targetLang</MudText>
+                </div>
+            </MudMenuItem>
+            <MudMenuItem OnClick="@(() => _searchTags = !_searchTags)">
+                <div class="d-flex align-center gap-2">
+                    <MudCheckBox T="bool" Value="_searchTags" Color="Color.Primary" Dense="true" Class="ma-0" />
+                    <MudText Typo="Typo.body2">Tagy</MudText>
+                </div>
+            </MudMenuItem>
+            <MudMenuItem OnClick="@(() => _searchNotes = !_searchNotes)">
+                <div class="d-flex align-center gap-2">
+                    <MudCheckBox T="bool" Value="_searchNotes" Color="Color.Primary" Dense="true" Class="ma-0" />
+                    <MudText Typo="Typo.body2">Poznámka</MudText>
+                </div>
+            </MudMenuItem>
+        </MudMenu>
     </div>
 
     <MudTable Items="_entries" Hover="true" Striped="true" Elevation="1"
               Style="border-radius: 12px;" Filter="FilterFunc">
         <HeaderContent>
-            <MudTh Style="font-weight: 700;">Výraz</MudTh>
-            <MudTh Style="font-weight: 700;">Překlad</MudTh>
+            <MudTh Style="font-weight: 700;">@_sourceLang</MudTh>
+            <MudTh Style="font-weight: 700;">@_targetLang</MudTh>
+            <MudTh Style="font-weight: 700;">Tagy</MudTh>
+            <MudTh Style="font-weight: 700;">Poznámka</MudTh>
             <MudTh Style="font-weight: 700;">Chybovost</MudTh>
             <MudTh Style="font-weight: 700;">Opakování</MudTh>
             <MudTh Style="font-weight: 700;">Poslední</MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd DataLabel="Výraz"><strong>@context.SourceText</strong></MudTd>
-            <MudTd DataLabel="Překlad">@context.TargetText</MudTd>
+            <MudTd DataLabel="@_sourceLang"><strong>@context.SourceText</strong></MudTd>
+            <MudTd DataLabel="@_targetLang">@context.TargetText</MudTd>
+            <MudTd DataLabel="Tagy">
+                @foreach (var tag in context.Tags)
+                {
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Primary">@tag.Name</MudChip>
+                }
+            </MudTd>
+            <MudTd DataLabel="Poznámka"><MudText Typo="Typo.body2" Color="Color.Secondary">@context.Notes</MudText></MudTd>
             <MudTd DataLabel="Chybovost">
                 <MudChip T="string" Size="Size.Small"
                          Color="@(context.ErrorRate > 60 ? Color.Error : Color.Warning)"
@@ -70,19 +108,33 @@ else
     private List<ErrorEntryDto> _entries = [];
     private bool _loading = true;
     private string _searchText = "";
+    private bool _searchSource = true, _searchTarget = true, _searchTags = true, _searchNotes;
+    private string _sourceLang = "Výraz", _targetLang = "Překlad";
 
     protected override async Task OnInitializedAsync()
     {
         DictState.OnChange += OnDictionaryChanged;
         _entries = await TrainingService.GetErrorEntriesAsync(DictState.SelectedDictionaryId);
+        var dict = DictState.SelectedDictionary;
+        if (dict != null) { _sourceLang = dict.SourceLangName; _targetLang = dict.TargetLangName; }
         _loading = false;
     }
 
     private bool FilterFunc(ErrorEntryDto entry)
     {
         if (string.IsNullOrWhiteSpace(_searchText)) return true;
-        return entry.SourceText.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-            || entry.TargetText.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+        var s = _searchText;
+        return (_searchSource && entry.SourceText.Contains(s, StringComparison.OrdinalIgnoreCase))
+            || (_searchTarget && entry.TargetText.Contains(s, StringComparison.OrdinalIgnoreCase))
+            || (_searchTags && entry.Tags.Any(t => t.Name.Contains(s, StringComparison.OrdinalIgnoreCase)))
+            || (_searchNotes && (entry.Notes?.Contains(s, StringComparison.OrdinalIgnoreCase) ?? false));
+    }
+
+    private async Task OpenTrainingDialogAsync()
+    {
+        var parameters = new DialogParameters<TrainingStartDialog>();
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        await DialogService.ShowAsync<TrainingStartDialog>("Trénink", parameters, options);
     }
 
     private async void OnDictionaryChanged()

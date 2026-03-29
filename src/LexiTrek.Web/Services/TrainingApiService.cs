@@ -25,6 +25,20 @@ public class TrainingApiService
         catch { return []; }
     }
 
+    public async Task<List<NewEntryDto>> GetNewEntriesAsync(long? dictionaryId)
+    {
+        var url = "api/training/new-entries";
+        if (dictionaryId.HasValue) url += $"?dictionaryId={dictionaryId}";
+        try { return await _http.GetFromJsonAsync<List<NewEntryDto>>(url) ?? []; }
+        catch { return []; }
+    }
+
+    public async Task<List<DictionaryEntryDto>> GetNewDictionaryEntriesAsync(long dictionaryId)
+    {
+        try { return await _http.GetFromJsonAsync<List<DictionaryEntryDto>>($"api/training/new-entries/{dictionaryId}") ?? []; }
+        catch { return []; }
+    }
+
     public async Task<List<TrainingWordDto>> GetTrainingWordsAsync(long? groupId, long? tagId, int count = 20, string? filter = null)
     {
         var url = $"api/training/words?count={count}";

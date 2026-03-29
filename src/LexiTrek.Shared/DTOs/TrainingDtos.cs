@@ -48,12 +48,22 @@ public record TrainingStatsDto(
     int TotalReviewedCount
 );
 
+public record NewEntryDto(
+    long EntryId,
+    long WordPairId,
+    string SourceText,
+    string TargetText,
+    string? Notes,
+    List<TagDto> Tags
+);
+
 public record ErrorEntryDto(
     long EntryId,
     long WordPairId,
     string SourceText,
     string TargetText,
     string? Notes,
+    List<TagDto> Tags,
     int TotalReviews,
     int CorrectCount,
     int IncorrectCount,

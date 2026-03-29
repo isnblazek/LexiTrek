@@ -124,6 +124,7 @@ public class TrainingService : ITrainingService
         var entries = await entryQuery
             .Include(e => e.WordPair).ThenInclude(wp => wp.SourceWord)
             .Include(e => e.WordPair).ThenInclude(wp => wp.TargetWord)
+            .Include(e => e.Tags).ThenInclude(et => et.Tag)
             .ToListAsync();
 
         var wordPairIds = entries.Select(e => e.WordPairId).Distinct().ToList();
@@ -141,11 +142,65 @@ public class TrainingService : ITrainingService
                 return new ErrorEntryDto(
                     e.Id, e.WordPairId,
                     e.WordPair.SourceWord.Text, e.WordPair.TargetWord.Text,
-                    e.Notes, p.TotalReviews, p.CorrectCount, p.IncorrectCount,
+                    e.Notes, e.Tags.Select(t => new TagDto(t.TagId, t.Tag.Name)).ToList(),
+                    p.TotalReviews, p.CorrectCount, p.IncorrectCount,
                     Math.Round((double)p.IncorrectCount / p.TotalReviews * 100, 1),
                     p.LastReviewedAt);
             })
             .OrderByDescending(e => e.ErrorRate)
+            .ToList();
+    }
+
+    public async Task<List<NewEntryDto>> GetNewEntriesAsync(long? dictionaryId, string userId)
+    {
+        var entryQuery = _db.DictionaryEntries
+            .Where(e => e.IsActive && e.Dictionary.UserId == userId);
+        if (dictionaryId.HasValue)
+            entryQuery = entryQuery.Where(e => e.DictionaryId == dictionaryId.Value);
+
+        var entries = await entryQuery
+            .Include(e => e.WordPair).ThenInclude(wp => wp.SourceWord)
+            .Include(e => e.WordPair).ThenInclude(wp => wp.TargetWord)
+            .Include(e => e.Tags).ThenInclude(et => et.Tag)
+            .ToListAsync();
+
+        var wordPairIds = entries.Select(e => e.WordPairId).Distinct().ToList();
+        var reviewedIds = await _db.UserWordProgresses
+            .Where(p => p.UserId == userId && wordPairIds.Contains(p.WordPairId))
+            .Select(p => p.WordPairId)
+            .ToHashSetAsync();
+
+        return entries
+            .Where(e => !reviewedIds.Contains(e.WordPairId))
+            .Select(e => new NewEntryDto(
+                e.Id, e.WordPairId,
+                e.WordPair.SourceWord.Text, e.WordPair.TargetWord.Text,
+                e.Notes, e.Tags.Select(t => new TagDto(t.TagId, t.Tag.Name)).ToList()))
+            .ToList();
+    }
+
+    public async Task<List<DictionaryEntryDto>> GetNewDictionaryEntriesAsync(long dictionaryId, string userId)
+    {
+        var entries = await _db.DictionaryEntries
+            .Where(e => e.IsActive && e.DictionaryId == dictionaryId && e.Dictionary.UserId == userId)
+            .Include(e => e.WordPair).ThenInclude(wp => wp.SourceWord)
+            .Include(e => e.WordPair).ThenInclude(wp => wp.TargetWord)
+            .Include(e => e.Tags).ThenInclude(et => et.Tag)
+            .ToListAsync();
+
+        var wordPairIds = entries.Select(e => e.WordPairId).Distinct().ToList();
+        var reviewedIds = await _db.UserWordProgresses
+            .Where(p => p.UserId == userId && wordPairIds.Contains(p.WordPairId))
+            .Select(p => p.WordPairId)
+            .ToHashSetAsync();
+
+        return entries
+            .Where(e => !reviewedIds.Contains(e.WordPairId))
+            .Select(e => new DictionaryEntryDto(
+                e.Id, e.WordPairId,
+                e.WordPair.SourceWord.Text, e.WordPair.TargetWord.Text,
+                e.Notes, e.IsActive,
+                e.Tags.Select(t => new TagDto(t.TagId, t.Tag.Name)).ToList()))
             .ToList();
     }
 

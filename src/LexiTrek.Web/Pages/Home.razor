@@ -134,7 +134,7 @@
                          @onclick="@(() => Navigation.NavigateTo("/groups/public"))">
                     <MudCardContent Class="pa-3 text-center">
                         <MudIcon Icon="@Icons.Material.Filled.Public" Color="Color.Success" />
-                        <MudText Typo="Typo.body2" Class="mt-1" Style="font-weight: 600;">Veřejné skupiny</MudText>
+                        <MudText Typo="Typo.body2" Class="mt-1" Style="font-weight: 600;">Veřejná slovíčka</MudText>
                     </MudCardContent>
                 </MudCard>
             </div>
@@ -154,6 +154,19 @@
                                         <MudIcon Icon="@Icons.Material.Filled.AllInclusive" Size="Size.Small" Color="Color.Primary" />
                                     </div>
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">@(DictState.SelectedDictionary?.EntryCount ?? 0) slovíček</MudText>
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudCard Class="group-card cursor-pointer" Style="border-radius: 12px; border-left: 4px solid #8B5CF6; background: #F5F3FF;"
+                                     @onclick="@(() => Navigation.NavigateTo("/training/new"))">
+                                <MudCardContent>
+                                    <div class="d-flex align-center justify-space-between mb-1">
+                                        <MudText Typo="Typo.h6" Style="font-weight: 600;">Nová slovíčka</MudText>
+                                        <MudIcon Icon="@Icons.Material.Filled.NewReleases" Size="Size.Small" Style="color: #8B5CF6;" />
+                                    </div>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@(_stats?.NewCount ?? 0) slovíček</MudText>
                                 </MudCardContent>
                             </MudCard>
                         </MudItem>

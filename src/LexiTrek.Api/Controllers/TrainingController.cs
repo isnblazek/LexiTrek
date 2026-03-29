@@ -29,6 +29,18 @@ public class TrainingController : ControllerBase
         return Ok(await _trainingService.GetErrorEntriesAsync(dictionaryId, UserId));
     }
 
+    [HttpGet("new-entries")]
+    public async Task<ActionResult<List<NewEntryDto>>> GetNewEntries([FromQuery] long? dictionaryId)
+    {
+        return Ok(await _trainingService.GetNewEntriesAsync(dictionaryId, UserId));
+    }
+
+    [HttpGet("new-entries/{dictionaryId:long}")]
+    public async Task<ActionResult<List<DictionaryEntryDto>>> GetNewDictionaryEntries(long dictionaryId)
+    {
+        return Ok(await _trainingService.GetNewDictionaryEntriesAsync(dictionaryId, UserId));
+    }
+
     [HttpGet("words")]
     public async Task<ActionResult<List<TrainingWordDto>>> GetTrainingWords(
         [FromQuery] long? groupId, [FromQuery] long? tagId, [FromQuery] int count = 20, [FromQuery] string? filter = null)

@@ -32,7 +32,8 @@
 
             @if (_mode == 0)
             {
-                <MudSelect @bind-Value="_selectedGroupId" Label="Vyberte skupinu" Variant="Variant.Outlined" Class="mt-2" Dense="true" Margin="Margin.Dense">
+                <MudSelect @bind-Value="_selectedGroupId" Label="Vyberte skupinu" Variant="Variant.Outlined" Class="mt-2" Dense="true" Margin="Margin.Dense"
+                           ToStringFunc="@(id => FilteredGroups.FirstOrDefault(g => g.Id == id) is { } g ? $"{g.Name} ({g.EntryCount} slovíček)" : "")">
                     @foreach (var group in FilteredGroups)
                     {
                         <MudSelectItem Value="group.Id">@group.Name (@group.EntryCount slovíček)</MudSelectItem>
@@ -41,7 +42,8 @@
             }
             else
             {
-                <MudSelect @bind-Value="_selectedTagId" Label="Vyberte tag" Variant="Variant.Outlined" Class="mt-2" Dense="true" Margin="Margin.Dense">
+                <MudSelect @bind-Value="_selectedTagId" Label="Vyberte tag" Variant="Variant.Outlined" Class="mt-2" Dense="true" Margin="Margin.Dense"
+                           ToStringFunc="@(id => _tags.FirstOrDefault(t => t.Id == id)?.Name ?? "")">
                     @foreach (var tag in _tags)
                     {
                         <MudSelectItem Value="tag.Id">@tag.Name</MudSelectItem>

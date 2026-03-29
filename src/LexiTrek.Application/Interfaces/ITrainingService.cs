@@ -9,4 +9,6 @@ public interface ITrainingService
     Task<SessionResultsDto> CompleteSessionAsync(long sessionId, CompleteSessionDto dto, string userId);
     Task<TrainingStatsDto> GetTrainingStatsAsync(long? dictionaryId, string userId);
     Task<List<ErrorEntryDto>> GetErrorEntriesAsync(long? dictionaryId, string userId);
+    Task<List<NewEntryDto>> GetNewEntriesAsync(long? dictionaryId, string userId);
+    Task<List<DictionaryEntryDto>> GetNewDictionaryEntriesAsync(long dictionaryId, string userId);
 }
