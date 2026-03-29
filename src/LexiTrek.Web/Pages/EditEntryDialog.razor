@@ -5,11 +5,23 @@
     <TitleContent>Upravit slovíčko</TitleContent>
     <DialogContent>
         <MudForm @ref="_form">
-            <MudTextField @bind-Value="_sourceText" Label="Výraz" Variant="Variant.Outlined" Class="mb-3" Required="true" />
-            <MudTextField @bind-Value="_targetText" Label="Překlad" Variant="Variant.Outlined" Class="mb-3" Required="true" />
-            <MudTextField @bind-Value="_notes" Label="Poznámky" Variant="Variant.Outlined" Class="mb-3" />
-            <MudTextField @bind-Value="_tagsInput" Label="Tagy (oddělené čárkou)" Variant="Variant.Outlined"
-                          HelperText="Např. jídlo, sloveso, B2" />
+            <MudTextField @bind-Value="_sourceText" Label="@SourceLangName" Variant="Variant.Outlined" Class="mb-3" Required="true" />
+            <MudTextField @bind-Value="_targetText" Label="@TargetLangName" Variant="Variant.Outlined" Class="mb-3" Required="true" />
+            <div class="d-flex align-center mb-3">
+                <MudTextField @bind-Value="_tagsInput" Label="Tagy" Variant="Variant.Outlined"
+                              Placeholder="jídlo, B2..." Class="flex-grow-1" />
+                @if (_allTags.Any())
+                {
+                    <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown" Size="Size.Small" Dense="true"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        @foreach (var tag in _allTags)
+                        {
+                            <MudMenuItem OnClick="@(() => AppendTag(tag.Name))">@tag.Name</MudMenuItem>
+                        }
+                    </MudMenu>
+                }
+            </div>
+            <MudTextField @bind-Value="_notes" Label="Poznámka" Variant="Variant.Outlined" />
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -21,6 +33,8 @@
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public DictionaryEntryDto Entry { get; set; } = default!;
+    [Parameter] public string SourceLangName { get; set; } = "Výraz";
+    [Parameter] public string TargetLangName { get; set; } = "Překlad";
 
     private MudForm _form = default!;
     private bool _saving;
@@ -28,13 +42,26 @@
     private string _targetText = "";
     private string? _notes;
     private string _tagsInput = "";
+    private List<TagDto> _allTags = [];
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _sourceText = Entry.SourceText;
         _targetText = Entry.TargetText;
         _notes = Entry.Notes;
         _tagsInput = string.Join(", ", Entry.Tags.Select(t => t.Name));
+        _allTags = await TagService.GetTagsAsync();
+    }
+
+    private void AppendTag(string tagName)
+    {
+        var existing = _tagsInput
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .ToList();
+        if (!existing.Contains(tagName, StringComparer.OrdinalIgnoreCase))
+        {
+            _tagsInput = existing.Count > 0 ? $"{_tagsInput.TrimEnd().TrimEnd(',')}, {tagName}" : tagName;
+        }
     }
 
     private void Cancel() => MudDialog.Cancel();
@@ -58,12 +85,10 @@
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var allTags = await TagService.GetTagsAsync();
-
         var resolvedTags = new List<TagDto>();
         foreach (var tagName in desiredTags)
         {
-            var existing = allTags.FirstOrDefault(t => string.Equals(t.Name, tagName, StringComparison.OrdinalIgnoreCase));
+            var existing = _allTags.FirstOrDefault(t => string.Equals(t.Name, tagName, StringComparison.OrdinalIgnoreCase));
             if (existing != null)
             {
                 resolvedTags.Add(existing);
@@ -74,7 +99,7 @@
                 if (created != null)
                 {
                     resolvedTags.Add(created);
-                    allTags.Add(created);
+                    _allTags.Add(created);
                 }
             }
         }

@@ -60,7 +60,9 @@
             }
 
             <MudMainContent Class="pa-6 pt-16" Style="background: #F8FAFC; min-height: 100vh;">
-                @Body
+                <CascadingValue Value="_drawerOpen" Name="DrawerOpen">
+                    @Body
+                </CascadingValue>
             </MudMainContent>
         </MudLayout>
     </Authorized>

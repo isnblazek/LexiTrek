@@ -57,29 +57,69 @@ else
         <MudTextField @bind-Value="_searchText" Placeholder="Hledat..." Variant="Variant.Outlined"
                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
                       Margin="Margin.Dense" Immediate="true" Class="flex-grow-1" />
+        <MudMenu Icon="@Icons.Material.Filled.FilterList" Size="Size.Small" Dense="true"
+                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+                 CloseOnContentClick="false">
+            <MudMenuItem OnClick="@(() => _searchSource = !_searchSource)">
+                <div class="d-flex align-center gap-2">
+                    <MudCheckBox T="bool" Value="_searchSource" Color="Color.Primary" Dense="true" Class="ma-0" />
+                    <MudText Typo="Typo.body2">@(_sourceLang ?? "Výraz")</MudText>
+                </div>
+            </MudMenuItem>
+            <MudMenuItem OnClick="@(() => _searchTarget = !_searchTarget)">
+                <div class="d-flex align-center gap-2">
+                    <MudCheckBox T="bool" Value="_searchTarget" Color="Color.Primary" Dense="true" Class="ma-0" />
+                    <MudText Typo="Typo.body2">@(_targetLang ?? "Překlad")</MudText>
+                </div>
+            </MudMenuItem>
+            <MudMenuItem OnClick="@(() => _searchTags = !_searchTags)">
+                <div class="d-flex align-center gap-2">
+                    <MudCheckBox T="bool" Value="_searchTags" Color="Color.Primary" Dense="true" Class="ma-0" />
+                    <MudText Typo="Typo.body2">Tagy</MudText>
+                </div>
+            </MudMenuItem>
+            <MudMenuItem OnClick="@(() => _searchNotes = !_searchNotes)">
+                <div class="d-flex align-center gap-2">
+                    <MudCheckBox T="bool" Value="_searchNotes" Color="Color.Primary" Dense="true" Class="ma-0" />
+                    <MudText Typo="Typo.body2">Poznámka</MudText>
+                </div>
+            </MudMenuItem>
+        </MudMenu>
     </div>
 
     @* ── Inline formulář pro přidání ── *@
     @if (_showAddEntry)
     {
         <MudPaper Elevation="1" Class="pa-4 mb-4" Style="border-radius: 12px;">
-            <MudGrid Spacing="2" Class="align-end">
-                <MudItem xs="12" sm="4">
-                    <MudTextField @bind-Value="_newSourceText" Label="@(_sourceLang ?? "Výraz")" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-                <MudItem xs="12" sm="3">
-                    <MudTextField @bind-Value="_newTargetText" Label="@(_targetLang ?? "Překlad")" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-                <MudItem xs="12" sm="3">
-                    <MudTextField @bind-Value="_newNotes" Label="Poznámky" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-                <MudItem xs="12" sm="2" Class="d-flex gap-1">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddEntryAsync"
-                               Size="Size.Small" Style="text-transform: none;">Přidat</MudButton>
-                    <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
-                                   OnClick="@(() => _showAddEntry = false)" />
-                </MudItem>
-            </MudGrid>
+            <div class="d-flex align-center gap-2">
+                <MudTextField @bind-Value="_newSourceText" Label="@(_sourceLang ?? "Výraz")" Variant="Variant.Outlined" Margin="Margin.Dense"
+                              Style="flex: 3; min-width: 0;" />
+                <MudTextField @bind-Value="_newTargetText" Label="@(_targetLang ?? "Překlad")" Variant="Variant.Outlined" Margin="Margin.Dense"
+                              Style="flex: 3; min-width: 0;" />
+                <div class="d-flex align-center" style="flex: 4; min-width: 0;">
+                    <MudTextField @bind-Value="_newTagsInput" Label="Tagy" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                  Placeholder="jídlo, B2..." Class="flex-grow-1" />
+                    @if (_tags.Any())
+                    {
+                        <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown" Size="Size.Small" Dense="true"
+                                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                            @foreach (var tag in _tags)
+                            {
+                                <MudMenuItem OnClick="@(() => AppendTag(tag.Name))">@tag.Name</MudMenuItem>
+                            }
+                        </MudMenu>
+                    }
+                </div>
+                @if (!DrawerOpen)
+                {
+                    <MudTextField @bind-Value="_newNotes" Label="Poznámka" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                  Style="flex: 3; min-width: 0;" />
+                }
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddEntryAsync"
+                           Style="text-transform: none; height: 40px; flex-shrink: 0;">Přidat</MudButton>
+                <MudIconButton Icon="@Icons.Material.Filled.Close"
+                               OnClick="@(() => _showAddEntry = false)" Style="height: 40px; width: 40px; flex-shrink: 0;" />
+            </div>
         </MudPaper>
     }
 
@@ -90,20 +130,20 @@ else
         <HeaderContent>
             <MudTh Style="font-weight: 700;">@(_sourceLang ?? "Výraz")</MudTh>
             <MudTh Style="font-weight: 700;">@(_targetLang ?? "Překlad")</MudTh>
-            <MudTh Style="font-weight: 700;">Poznámky</MudTh>
             <MudTh Style="font-weight: 700;">Tagy</MudTh>
+            <MudTh Style="font-weight: 700;">Poznámka</MudTh>
             <MudTh Style="width: 80px;"></MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd DataLabel="Výraz"><strong>@context.SourceText</strong></MudTd>
-            <MudTd DataLabel="Překlad">@context.TargetText</MudTd>
-            <MudTd DataLabel="Poznámky"><MudText Typo="Typo.body2" Color="Color.Secondary">@context.Notes</MudText></MudTd>
+            <MudTd DataLabel="@(_sourceLang ?? "Výraz")"><strong>@context.SourceText</strong></MudTd>
+            <MudTd DataLabel="@(_targetLang ?? "Překlad")">@context.TargetText</MudTd>
             <MudTd DataLabel="Tagy">
                 @foreach (var tag in context.Tags)
                 {
                     <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Primary">@tag.Name</MudChip>
                 }
             </MudTd>
+            <MudTd DataLabel="Poznámka"><MudText Typo="Typo.body2" Color="Color.Secondary">@context.Notes</MudText></MudTd>
             <MudTd Style="white-space: nowrap;">
                 <MudTooltip Text="Upravit">
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => EditEntryAsync(context))" />
@@ -124,15 +164,19 @@ else
 
 @code {
     [Parameter] public long Id { get; set; }
+    [CascadingParameter(Name = "DrawerOpen")] private bool DrawerOpen { get; set; }
 
     private List<DictionaryEntryDto> _entries = [];
     private List<GroupListDto> _userGroups = [];
+    private List<TagDto> _tags = [];
     private HashSet<DictionaryEntryDto> _selectedEntries = [];
     private bool _loading = true;
     private bool _showAddEntry;
     private string _newSourceText = "", _newTargetText = "";
     private string? _newNotes;
+    private string _newTagsInput = "";
     private string _searchText = "";
+    private bool _searchSource = true, _searchTarget = true, _searchTags = true, _searchNotes;
     private string? _sourceLang;
     private string? _targetLang;
 
@@ -140,6 +184,7 @@ else
     {
         _entries = await WordService.GetEntriesAsync(Id);
         _userGroups = await GroupService.GetUserGroupsAsync();
+        _tags = await TagService.GetTagsAsync();
 
         var dict = DictState.Dictionaries.FirstOrDefault(d => d.Id == Id);
         if (dict != null)
@@ -154,9 +199,22 @@ else
     private bool FilterFunc(DictionaryEntryDto entry)
     {
         if (string.IsNullOrWhiteSpace(_searchText)) return true;
-        return entry.SourceText.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-            || entry.TargetText.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-            || (entry.Notes?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false);
+        var s = _searchText;
+        return (_searchSource && entry.SourceText.Contains(s, StringComparison.OrdinalIgnoreCase))
+            || (_searchTarget && entry.TargetText.Contains(s, StringComparison.OrdinalIgnoreCase))
+            || (_searchTags && entry.Tags.Any(t => t.Name.Contains(s, StringComparison.OrdinalIgnoreCase)))
+            || (_searchNotes && (entry.Notes?.Contains(s, StringComparison.OrdinalIgnoreCase) ?? false));
+    }
+
+    private void AppendTag(string tagName)
+    {
+        var existing = _newTagsInput
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .ToList();
+        if (!existing.Contains(tagName, StringComparer.OrdinalIgnoreCase))
+        {
+            _newTagsInput = existing.Count > 0 ? $"{_newTagsInput.TrimEnd().TrimEnd(',')}, {tagName}" : tagName;
+        }
     }
 
     private async Task AddToGroupAsync(long groupId)
@@ -178,10 +236,36 @@ else
         var entry = await WordService.AddEntryAsync(Id, new CreateEntryDto(_newSourceText, _newTargetText, _newNotes));
         if (entry != null)
         {
+            var desiredTags = _newTagsInput
+                .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (desiredTags.Count > 0)
+            {
+                var resolvedTags = new List<TagDto>();
+                foreach (var tagName in desiredTags)
+                {
+                    var existing = _tags.FirstOrDefault(t => string.Equals(t.Name, tagName, StringComparison.OrdinalIgnoreCase));
+                    if (existing != null)
+                    {
+                        resolvedTags.Add(existing);
+                    }
+                    else
+                    {
+                        var created = await TagService.CreateTagAsync(new CreateTagDto(tagName));
+                        if (created != null) { resolvedTags.Add(created); _tags.Add(created); }
+                    }
+                }
+                if (resolvedTags.Count > 0)
+                {
+                    await TagService.AssignTagsAsync(entry.Id, new AssignTagsDto(resolvedTags.Select(t => t.Id).ToList()));
+                    entry = entry with { Tags = resolvedTags };
+                }
+            }
+
             _entries.Add(entry);
-            _newSourceText = "";
-            _newTargetText = "";
-            _newNotes = null;
+            _newSourceText = ""; _newTargetText = ""; _newNotes = null; _newTagsInput = "";
             await DictState.LoadAsync();
             Snackbar.Add("Slovíčko přidáno!", Severity.Success);
         }
@@ -189,7 +273,12 @@ else
 
     private async Task EditEntryAsync(DictionaryEntryDto entry)
     {
-        var parameters = new DialogParameters<EditEntryDialog> { { x => x.Entry, entry } };
+        var parameters = new DialogParameters<EditEntryDialog>
+        {
+            { x => x.Entry, entry },
+            { x => x.SourceLangName, _sourceLang ?? "Výraz" },
+            { x => x.TargetLangName, _targetLang ?? "Překlad" }
+        };
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<EditEntryDialog>("Upravit slovíčko", parameters, options);
         var result = await dialog.Result;
