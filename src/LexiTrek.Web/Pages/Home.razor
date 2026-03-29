@@ -80,85 +80,64 @@
         {
             @* ── Dashboard pro uživatele se slovníkem ── *@
             <MudText Typo="Typo.h4" Class="mb-2 mt-4">Vítejte zpět!</MudText>
-            <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-6">Zde je přehled vašeho učení.</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-4">Zde je přehled vašeho učení.</MudText>
 
-            <MudGrid Spacing="4">
-                <MudItem xs="12" sm="6" md="4">
-                    <MudCard Class="stat-card stat-card-tertiary pa-4 cursor-pointer" @onclick="@(() => Navigation.NavigateTo("/training/setup"))">
-                        <MudCardContent>
-                            <div class="d-flex align-center gap-4">
-                                <MudAvatar Color="Color.Warning" Variant="Variant.Filled" Size="Size.Large">
-                                    <MudIcon Icon="@Icons.Material.Filled.FitnessCenter" />
-                                </MudAvatar>
-                                <div>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">K opakování</MudText>
-                                    <MudText Typo="Typo.h4">@(_stats?.DueCount ?? 0)</MudText>
-                                </div>
-                            </div>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-                <MudItem xs="12" sm="6" md="4">
-                    <MudCard Class="stat-card stat-card-primary pa-4 cursor-pointer" @onclick="@(() => Navigation.NavigateTo("/groups"))">
-                        <MudCardContent>
-                            <div class="d-flex align-center gap-4">
-                                <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Large">
-                                    <MudIcon Icon="@Icons.Material.Filled.Folder" />
-                                </MudAvatar>
-                                <div>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Moje skupiny</MudText>
-                                    <MudText Typo="Typo.h4">@_groups.Count()</MudText>
-                                </div>
-                            </div>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-                <MudItem xs="12" sm="6" md="4">
-                    <MudCard Class="stat-card stat-card-secondary pa-4">
-                        <MudCardContent>
-                            <div class="d-flex align-center gap-4">
-                                <MudAvatar Color="Color.Success" Variant="Variant.Filled" Size="Size.Large">
-                                    <MudIcon Icon="@Icons.Material.Filled.Translate" />
-                                </MudAvatar>
-                                <div>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Celkem slovíček</MudText>
-                                    <MudText Typo="Typo.h4">@(DictState.SelectedDictionary?.EntryCount ?? 0)</MudText>
-                                </div>
-                            </div>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudCard Class="stat-card stat-card-error pa-4 cursor-pointer" @onclick="@(() => Navigation.NavigateTo("/training/setup?filter=errors"))">
-                        <MudCardContent>
-                            <div class="d-flex align-center gap-4">
-                                <MudAvatar Color="Color.Error" Variant="Variant.Filled" Size="Size.Large">
-                                    <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" />
-                                </MudAvatar>
-                                <div>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Problematická slovíčka</MudText>
-                                    <MudText Typo="Typo.h4">@(_stats?.ErrorWordCount ?? 0)</MudText>
-                                </div>
-                            </div>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudCard Class="stat-card stat-card-new pa-4 cursor-pointer" @onclick="@(() => Navigation.NavigateTo("/training/setup?filter=new"))">
-                        <MudCardContent>
-                            <div class="d-flex align-center gap-4">
-                                <MudAvatar Style="background: #8B5CF6; color: white;" Variant="Variant.Filled" Size="Size.Large">
-                                    <MudIcon Icon="@Icons.Material.Filled.NewReleases" />
-                                </MudAvatar>
-                                <div>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Nová slovíčka</MudText>
-                                    <MudText Typo="Typo.h4">@(_stats?.NewCount ?? 0)</MudText>
-                                </div>
-                            </div>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-            </MudGrid>
+            @* ── Statistiky ── *@
+            <div class="d-flex flex-wrap gap-3 mb-4">
+                <MudCard Class="stat-tile stat-tile-secondary" Style="flex: 1; min-width: 130px;">
+                    <MudCardContent Class="pa-3 text-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Translate" Color="Color.Success" />
+                        <MudText Typo="Typo.h5" Class="mt-1" Style="font-weight: 700;">@(DictState.SelectedDictionary?.EntryCount ?? 0)</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Celkem slovíček</MudText>
+                    </MudCardContent>
+                </MudCard>
+                <MudCard Class="stat-tile stat-tile-tertiary" Style="flex: 1; min-width: 130px;">
+                    <MudCardContent Class="pa-3 text-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Warning" />
+                        <MudText Typo="Typo.h5" Class="mt-1" Style="font-weight: 700;">@(_stats?.DueCount ?? 0)</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">K opakování</MudText>
+                    </MudCardContent>
+                </MudCard>
+                <MudCard Class="stat-tile stat-tile-new" Style="flex: 1; min-width: 130px;">
+                    <MudCardContent Class="pa-3 text-center">
+                        <MudIcon Icon="@Icons.Material.Filled.NewReleases" Style="color: #8B5CF6;" />
+                        <MudText Typo="Typo.h5" Class="mt-1" Style="font-weight: 700;">@(_stats?.NewCount ?? 0)</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Nová slovíčka</MudText>
+                    </MudCardContent>
+                </MudCard>
+                <MudCard Class="stat-tile stat-tile-error" Style="flex: 1; min-width: 130px;">
+                    <MudCardContent Class="pa-3 text-center">
+                        <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Error" />
+                        <MudText Typo="Typo.h5" Class="mt-1" Style="font-weight: 700;">@(_stats?.ErrorWordCount ?? 0)</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Problematická</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </div>
+
+            @* ── Rychlé akce ── *@
+            <div class="d-flex flex-wrap gap-3 mb-6">
+                <MudCard Class="stat-tile stat-tile-tertiary cursor-pointer" Style="flex: 1; min-width: 130px;"
+                         @onclick="@(() => Navigation.NavigateTo("/training/setup"))">
+                    <MudCardContent Class="pa-3 text-center">
+                        <MudIcon Icon="@Icons.Material.Filled.FitnessCenter" Color="Color.Warning" />
+                        <MudText Typo="Typo.body2" Class="mt-1" Style="font-weight: 600;">Trénink</MudText>
+                    </MudCardContent>
+                </MudCard>
+                <MudCard Class="stat-tile stat-tile-primary cursor-pointer" Style="flex: 1; min-width: 130px;"
+                         @onclick="@(() => Navigation.NavigateTo("/groups"))">
+                    <MudCardContent Class="pa-3 text-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Folder" Color="Color.Primary" />
+                        <MudText Typo="Typo.body2" Class="mt-1" Style="font-weight: 600;">Moje skupiny</MudText>
+                    </MudCardContent>
+                </MudCard>
+                <MudCard Class="stat-tile stat-tile-secondary cursor-pointer" Style="flex: 1; min-width: 130px;"
+                         @onclick="@(() => Navigation.NavigateTo("/groups/public"))">
+                    <MudCardContent Class="pa-3 text-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Public" Color="Color.Success" />
+                        <MudText Typo="Typo.body2" Class="mt-1" Style="font-weight: 600;">Veřejné skupiny</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </div>
 
             @if (_groups.Any())
             {

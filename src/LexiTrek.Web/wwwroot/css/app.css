@@ -114,36 +114,24 @@ h1:focus {
     background-clip: text;
 }
 
-/* ── Dashboard stat cards ─────────────────────────── */
-.stat-card {
-    border: none !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+/* ── Dashboard stat tiles ─────────────────────────── */
+.stat-tile {
+    border-radius: 12px !important;
+    border: 1px solid #E2E8F0 !important;
+    box-shadow: none !important;
     transition: all 0.2s ease;
 }
 
-.stat-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+.stat-tile:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+    transform: translateY(-1px);
 }
 
-.stat-card-primary {
-    border-left: 4px solid #4F46E5 !important;
-}
-
-.stat-card-secondary {
-    border-left: 4px solid #10B981 !important;
-}
-
-.stat-card-tertiary {
-    border-left: 4px solid #F59E0B !important;
-}
-
-.stat-card-error {
-    border-left: 4px solid #EF4444 !important;
-}
-
-.stat-card-new {
-    border-left: 4px solid #8B5CF6 !important;
-}
+.stat-tile-primary { border-left: 3px solid #4F46E5 !important; }
+.stat-tile-secondary { border-left: 3px solid #10B981 !important; }
+.stat-tile-tertiary { border-left: 3px solid #F59E0B !important; }
+.stat-tile-error { border-left: 3px solid #EF4444 !important; }
+.stat-tile-new { border-left: 3px solid #8B5CF6 !important; }
 
 /* ── Group cards ──────────────────────────────────── */
 .group-card {
