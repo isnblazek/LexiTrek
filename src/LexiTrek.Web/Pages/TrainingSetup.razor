@@ -10,7 +10,7 @@
 
 <PageTitle>Trénink - LexiTrek</PageTitle>
 
-<MudText Typo="Typo.h5" Style="font-weight: 700;" Class="mt-4 mb-4">Nastavení tréninku</MudText>
+<MudText Typo="Typo.h5" Style="font-weight: 700;" Class="mt-4 mb-4">Trénink</MudText>
 
 <MudContainer MaxWidth="MaxWidth.Small">
     <MudCard Class="pa-2">
@@ -49,30 +49,50 @@
                 </MudSelect>
             }
 
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3 mb-1">Počet slovíček</MudText>
-            <div class="d-flex gap-2">
-                @foreach (var c in new[] { 10, 20, 30, 40, 50 })
-                {
-                    <MudButton Variant="@(_count == c ? Variant.Filled : Variant.Outlined)"
-                               Color="Color.Primary" Size="Size.Small"
-                               OnClick="@(() => _count = c)"
-                               Style="min-width: 52px;">
-                        @c
+            <div class="text-center mt-4">
+                <div class="d-flex justify-center mb-6">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartTrainingAsync"
+                               Disabled="_loading" Size="Size.Large"
+                               Style="text-transform: none; padding: 10px 32px;"
+                               StartIcon="@Icons.Material.Filled.PlayArrow">
+                        @if (_loading) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+                        Spustit
                     </MudButton>
-                }
+                </div>
+                <div @onmouseenter="@(() => _showCountLabel = true)" @onmouseleave="@(() => _showCountLabel = false)">
+                    <div class="d-flex justify-center mb-1" style="height: 18px;">
+                        @if (_showCountLabel)
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Počet slovíček</MudText>
+                        }
+                    </div>
+                    <div class="d-flex gap-2 justify-center pb-2">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small"
+                                   Class="count-btn" OnClick="@(() => _count = null)"
+                                   Style="@($"min-width: 52px;{(_count == null ? " background: #CBD5E1; font-weight: 700;" : "")}")">
+                            Vše
+                        </MudButton>
+                        @foreach (var c in new[] { 10, 20, 30, 40, 50 })
+                        {
+                            <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small"
+                                       Class="count-btn" OnClick="@(() => _count = c)"
+                                       Style="@($"min-width: 52px;{(_count == c ? " background: #CBD5E1; font-weight: 700;" : "")}")">
+                                @c
+                            </MudButton>
+                        }
+                    </div>
+                </div>
             </div>
         </MudCardContent>
-        <MudCardActions Class="pt-0">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartTrainingAsync" Disabled="_loading" FullWidth="true">Začít trénink</MudButton>
-        </MudCardActions>
     </MudCard>
 </MudContainer>
 
 @code {
     private int _mode;
     private long _selectedGroupId, _selectedTagId;
-    private int _count = 20;
+    private int? _count = 20;
     private bool _loading;
+    private bool _showCountLabel;
     private string? _filter;
     private List<GroupListDto> _groups = [];
     private List<TagDto> _tags = [];
@@ -108,12 +128,13 @@
         _loading = true;
         long? groupId = _mode == 0 ? _selectedGroupId : null;
         long? tagId = _mode == 1 ? _selectedTagId : null;
+        var count = _count ?? 9999;
 
-        var words = await TrainingService.GetTrainingWordsAsync(groupId, tagId, _count, _filter);
+        var words = await TrainingService.GetTrainingWordsAsync(groupId, tagId, count, _filter);
         if (!words.Any()) { Snackbar.Add("Žádná slovíčka k tréninku.", Severity.Warning); _loading = false; return; }
 
         var session = await TrainingService.StartSessionAsync(new StartSessionDto(_mode, groupId, tagId));
-        if (session != null) Navigation.NavigateTo($"/training/{session.Id}?groupId={groupId}&tagId={tagId}&count={_count}&filter={_filter}");
+        if (session != null) Navigation.NavigateTo($"/training/{session.Id}?groupId={groupId}&tagId={tagId}&count={count}&filter={_filter}");
         else Snackbar.Add("Chyba při zahájení tréninku.", Severity.Error);
         _loading = false;
     }

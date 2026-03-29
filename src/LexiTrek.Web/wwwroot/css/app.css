@@ -133,6 +133,14 @@ h1:focus {
 .stat-tile-error { border-left: 3px solid #EF4444 !important; }
 .stat-tile-new { border-left: 3px solid #8B5CF6 !important; }
 
+/* ── Training count buttons ───────────────────────── */
+.count-btn.mud-button-outlined:hover {
+    background-color: #CBD5E1 !important;
+}
+.count-btn.mud-button-outlined:hover::after {
+    background: transparent !important;
+}
+
 /* ── Group cards ──────────────────────────────────── */
 .group-card {
     border: 1px solid #E2E8F0 !important;

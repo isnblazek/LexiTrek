@@ -3,34 +3,48 @@
 @inject ISnackbar Snackbar
 
 <MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center justify-space-between" style="width: 100%;">
+            <MudText Typo="Typo.h6">Trénink</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="Cancel" />
+        </div>
+    </TitleContent>
     <DialogContent>
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">Počet slovíček</MudText>
-        <div class="d-flex gap-2 flex-wrap">
-            <MudButton Variant="@(_count == null ? Variant.Filled : Variant.Outlined)"
-                       Color="Color.Primary" Size="Size.Small"
-                       OnClick="@(() => _count = null)"
-                       Style="min-width: 52px;">
-                Vše
-            </MudButton>
-            @foreach (var c in new[] { 10, 20, 30, 40, 50 })
-            {
-                <MudButton Variant="@(_count == c ? Variant.Filled : Variant.Outlined)"
-                           Color="Color.Primary" Size="Size.Small"
-                           OnClick="@(() => _count = c)"
-                           Style="min-width: 52px;">
-                    @c
+        <div class="text-center">
+            <div class="d-flex justify-center mb-6">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartAsync"
+                           Disabled="_loading" Size="Size.Large"
+                           Style="text-transform: none; padding: 10px 32px;"
+                           StartIcon="@Icons.Material.Filled.PlayArrow">
+                    @if (_loading) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+                    Spustit
                 </MudButton>
-            }
+            </div>
+            <div @onmouseenter="@(() => _showCountLabel = true)" @onmouseleave="@(() => _showCountLabel = false)">
+                <div class="d-flex justify-center mb-1" style="height: 18px;">
+                    @if (_showCountLabel)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Počet slovíček</MudText>
+                    }
+                </div>
+                <div class="d-flex gap-2 justify-center pb-2">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small"
+                               Class="count-btn" OnClick="@(() => _count = null)"
+                               Style="@($"min-width: 52px;{(_count == null ? " background: #CBD5E1; font-weight: 700;" : "")}")">
+                        Vše
+                    </MudButton>
+                    @foreach (var c in new[] { 10, 20, 30, 40, 50 })
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small"
+                                   Class="count-btn" OnClick="@(() => _count = c)"
+                                   Style="@($"min-width: 52px;{(_count == c ? " background: #CBD5E1; font-weight: 700;" : "")}")">
+                            @c
+                        </MudButton>
+                    }
+                </div>
+            </div>
         </div>
     </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel" Style="text-transform: none;">Zrušit</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartAsync"
-                   Disabled="_loading" Style="text-transform: none;">
-            @if (_loading) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
-            Začít trénink
-        </MudButton>
-    </DialogActions>
 </MudDialog>
 
 @code {
@@ -39,6 +53,7 @@
 
     private int? _count = 20;
     private bool _loading;
+    private bool _showCountLabel;
 
     private async Task StartAsync()
     {
