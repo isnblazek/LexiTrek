@@ -8,6 +8,7 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@implements IDisposable
 
 <PageTitle>Nová slovíčka - LexiTrek</PageTitle>
 
@@ -183,6 +184,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        DictState.OnChange += OnDictionaryChanged;
         if (DictionaryId.HasValue)
             _entries = await TrainingService.GetNewDictionaryEntriesAsync(DictionaryId.Value);
         _userGroups = await GroupService.GetUserGroupsAsync();
@@ -193,6 +195,19 @@ else
 
         _loading = false;
     }
+
+    private async void OnDictionaryChanged()
+    {
+        if (DictionaryId.HasValue)
+            _entries = await TrainingService.GetNewDictionaryEntriesAsync(DictionaryId.Value);
+        else
+            _entries = [];
+        var dict = DictState.SelectedDictionary;
+        if (dict != null) { _sourceLang = dict.SourceLangName; _targetLang = dict.TargetLangName; }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => DictState.OnChange -= OnDictionaryChanged;
 
     private bool FilterFunc(DictionaryEntryDto entry)
     {

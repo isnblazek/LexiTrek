@@ -136,7 +136,11 @@ public class GroupService : IGroupService
         var query = _db.WordGroups.Where(g => g.IsPublic && g.OwnerId != userId);
 
         if (request.DictionaryId.HasValue)
-            query = query.Where(g => g.DictionaryId == request.DictionaryId.Value);
+        {
+            var dict = await _db.Dictionaries.FindAsync(request.DictionaryId.Value);
+            if (dict != null)
+                query = query.Where(g => g.Dictionary.SourceLangId == dict.SourceLangId && g.Dictionary.TargetLangId == dict.TargetLangId);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {

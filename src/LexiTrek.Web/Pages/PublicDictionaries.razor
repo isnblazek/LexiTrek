@@ -1,8 +1,10 @@
 @page "/groups/public"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject GroupApiService GroupService
+@inject DictionaryStateService DictState
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@implements IDisposable
 
 <PageTitle>Veřejná slovíčka - LexiTrek</PageTitle>
 
@@ -61,6 +63,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        DictState.OnChange += OnDictionaryChanged;
         if (!string.IsNullOrWhiteSpace(InitialSearch))
             _search = InitialSearch;
         await LoadAsync();
@@ -69,11 +72,19 @@ else
     private async Task LoadAsync()
     {
         _loading = true;
-        _result = await GroupService.GetPublicGroupsAsync(_search, _page);
+        _result = await GroupService.GetPublicGroupsAsync(_search, _page, DictState.SelectedDictionaryId);
         _loading = false;
     }
 
     private async Task HandleSearch(KeyboardEventArgs e) { if (e.Key == "Enter") { _page = 1; await LoadAsync(); } }
     private async Task PageChanged(int page) { _page = page; await LoadAsync(); }
 
+    private async void OnDictionaryChanged()
+    {
+        _page = 1;
+        await LoadAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => DictState.OnChange -= OnDictionaryChanged;
 }
